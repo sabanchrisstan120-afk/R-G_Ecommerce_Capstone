@@ -52,6 +52,21 @@ foreach ($reviews as $r) {
 $average_rating = count($reviews)
     ? round($total_rating / count($reviews), 1)
     : 0;
+
+    // PRODUCT RECOMMENDATIONS — same category, similar price (±30%)
+$rec_res = api_request('GET', '/products?category=' . urlencode($product['category_slug']) . '&limit=4');
+$all_rec = $rec_res['body']['data']['products'] ?? [];
+
+$product_price = floatval($product['price']);
+$recommendations = array_filter($all_rec, function($p) use ($product, $product_price) {
+    if ($p['id'] === $product['id']) return false; // exclude current product
+    $p_price = floatval($p['price']);
+    $lower   = $product_price * 0.70;
+    $upper   = $product_price * 1.30;
+    return $p_price >= $lower && $p_price <= $upper;
+});
+$recommendations = array_slice($recommendations, 0, 4);
+
 if (!$product) {
     set_flash('error', 'Product not found.');
     header('Location: /rg-trading-php/index.php'); exit;
@@ -806,20 +821,19 @@ if (is_logged_in()) {
       ></textarea>
 
     </div>
-
-    <button type="submit"
-            style="
-              background:#ee4d2d;
-              color:#fff;
-              border:none;
-              padding:12px 20px;
-              border-radius:8px;
-              cursor:pointer;
-              font-weight:600;
-            ">
-      Submit Review
-    </button>
-
+<button type="submit"
+        id="reviewBtn"
+        style="
+          background:#ee4d2d;
+          color:#fff;
+          border:none;
+          padding:12px 20px;
+          border-radius:8px;
+          cursor:pointer;
+          font-weight:600;
+        ">
+  Submit Review
+</button>
   </form>
 
 </div>
@@ -941,5 +955,133 @@ if (is_logged_in()) {
 
 }());
 </script>
+
+
+<script>
+document.querySelector('form').addEventListener('submit', function () {
+    const btn = document.getElementById('reviewBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Submitting...";
+    }
+});
+</script>
+
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PRODUCT RECOMMENDATIONS
+════════════════════════════════════════════════════════════════ -->
+<?php if (!empty($recommendations)): ?>
+<div class="pd-wrap" style="padding-top:0;">
+  <div style="
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 2px 16px rgba(0,0,0,.07);
+    padding:28px;
+    margin-top:24px;
+  ">
+    <h2 style="
+      font-size:18px;
+      font-weight:700;
+      color:#212121;
+      margin-bottom:20px;
+      padding-bottom:12px;
+      border-bottom:2px solid #ee4d2d;
+      display:inline-block;
+    ">You Might Also Like</h2>
+
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:16px;
+    ">
+      <?php foreach ($recommendations as $rec):
+        $rec_images = $rec['image_urls'] ?? [];
+        if (is_string($rec_images)) $rec_images = json_decode($rec_images, true) ?? [];
+        if (empty($rec_images) && !empty($rec['image_url'])) $rec_images = [$rec['image_url']];
+        $rec_img = $rec_images[0] ?? null;
+        $rec_qty = (int)($rec['stock_qty'] ?? 0);
+      ?>
+      <a href="/rg-trading-php/pages/product-detail.php?id=<?= h($rec['id']) ?>"
+         style="text-decoration:none;color:inherit;">
+        <div style="
+          border:1px solid #e8e8e8;
+          border-radius:10px;
+          overflow:hidden;
+          transition:box-shadow .22s ease, transform .22s ease;
+          background:#fff;
+          cursor:pointer;
+        "
+        onmouseover="this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)';this.style.transform='translateY(-3px)'"
+        onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+
+          <!-- Image -->
+          <div style="
+            width:100%;
+            aspect-ratio:1/1;
+            background:#f7f7f7;
+            overflow:hidden;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+            <?php if ($rec_img): ?>
+              <img src="<?= h($rec_img) ?>"
+                   alt="<?= h($rec['name']) ?>"
+                   style="width:100%;height:100%;object-fit:cover;transition:transform .3s ease;"
+                   onmouseover="this.style.transform='scale(1.06)'"
+                   onmouseout="this.style.transform='scale(1)'">
+            <?php else: ?>
+              <span style="font-size:40px;color:#ccc;">❄️</span>
+            <?php endif; ?>
+          </div>
+
+          <!-- Info -->
+          <div style="padding:12px;">
+            <div style="
+              font-size:10px;
+              font-weight:700;
+              color:#ee4d2d;
+              text-transform:uppercase;
+              letter-spacing:.06em;
+              margin-bottom:4px;
+            "><?= h($rec['brand']) ?></div>
+
+            <div style="
+              font-size:13px;
+              font-weight:600;
+              color:#212121;
+              line-height:1.4;
+              margin-bottom:8px;
+              display:-webkit-box;
+              -webkit-line-clamp:2;
+              -webkit-box-orient:vertical;
+              overflow:hidden;
+            "><?= h($rec['name']) ?></div>
+
+            <div style="
+              font-size:16px;
+              font-weight:800;
+              color:#ee4d2d;
+              margin-bottom:6px;
+            "><?= format_price($rec['price']) ?></div>
+
+            <?php if ($rec_qty <= 0): ?>
+              <span style="font-size:11px;color:#c62828;font-weight:600;">● Out of Stock</span>
+            <?php elseif ($rec_qty <= 5): ?>
+              <span style="font-size:11px;color:#e65100;font-weight:600;">● Only <?= $rec_qty ?> left</span>
+            <?php else: ?>
+              <span style="font-size:11px;color:#1e7e34;font-weight:600;">● In Stock</span>
+            <?php endif; ?>
+          </div>
+
+        </div>
+      </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

@@ -249,10 +249,12 @@ foreach ($products as &$product) {
 
     $review_res = api_request(
         'GET',
-        '/reviews/product/' . $product['id']
+        '/reviews/product/' . $product['id'],
+        [],
+        true
     );
 
-    $reviews = $review_res['body']['data']['reviews'] ?? [];
+    $reviews = $review_res['body']['reviews'] ?? [];
 
     $product['reviews'] = $reviews;
 
@@ -1031,7 +1033,7 @@ function previewMultiple(input, wrapId){
           ">
 
             <strong>
-              ${r.user_name || 'Customer'}
+              ${r.first_name || ''} ${r.last_name || ''}
             </strong>
 
             <span style="color:#f6ad55;">

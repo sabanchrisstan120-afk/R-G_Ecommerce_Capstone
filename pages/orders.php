@@ -1,50 +1,21 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 require_login();
+
 /* =========================
    SUBMIT REVIEW
 ========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 
-    $payload = [
-        'product_id' => trim($_POST['product_id'] ?? ''),
-        'rating'     => intval($_POST['rating'] ?? 0),
-        'comment'    => trim($_POST['comment'] ?? '')
-    ];
+   $payload = [
+    'product_id' => trim($_POST['product_id']),
+    'rating'     => intval($_POST['rating']),
+    'comment'    => trim($_POST['comment'])
+];
 
-    $review_result = api_request(
-        'POST',
-        '/reviews',
-        $payload,
-        true
-    );
 
-    if (($review_result['status'] ?? 500) === 201) {
 
-        set_flash('success', 'Review submitted successfully.');
-
-    } else {
-
-        set_flash(
-            'error',
-            $review_result['body']['message'] ?? 'Failed to submit review.'
-        );
-    }
-
-    header('Location: ' . $_SERVER['REQUEST_URI']);
-    exit;
-}
-/* =========================
-   SUBMIT REVIEW
-========================= */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
-
-    $payload = [
-        'product_id' => intval($_POST['product_id']),
-        'rating'     => intval($_POST['rating']),
-        'comment'    => trim($_POST['comment'])
-    ];
-
+   
     $review_result = api_request(
         'POST',
         '/reviews',
@@ -219,7 +190,7 @@ include __DIR__ . '/../includes/header.php';
   <?php if (strtolower($order['status'] ?? '') === 'delivered'): ?>
     <button type="button"
             class="btn-sm btn-sm-green"
-           onclick="openReviewModal('<?= $order['items'][0]['product_id'] ?? '' ?>')">
+          onclick="openReviewModal('<?= h(trim($order['items'][0]['product_id'] ?? '')) ?>')">
       ⭐ Review
     </button>
   <?php endif; ?>
