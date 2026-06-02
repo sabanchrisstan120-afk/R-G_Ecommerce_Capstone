@@ -4,12 +4,15 @@ require_admin();
 
 $period = intval($_GET['period'] ?? 30);
 
+$months = max(1, (int)ceil($period / 30));
+
 $summary  = api_request('GET', "/admin/dashboard/summary?period={$period}", [], true);
-$revenue  = api_request('GET', "/admin/dashboard/revenue-trends?granularity=day&months=1", [], true);
+$revenue  = api_request('GET', "/admin/dashboard/revenue-trends?granularity=day&months={$months}", [], true);
 $topProds = api_request('GET', "/admin/dashboard/top-products", [], true);
 $seasonal = api_request('GET', "/admin/dashboard/seasonal-demand", [], true);
 $peaks    = api_request('GET', "/admin/dashboard/peak-periods", [], true);
 $repeats  = api_request('GET', "/admin/dashboard/repeat-customers", [], true);
+$ordersForPayments = api_request('GET', "/admin/orders?limit=1000", [], true);
 
 $s         = $summary['body']['data']  ?? [];
 $rev_data  = $revenue['body']['data']['trends']  ?? [];
@@ -17,6 +20,19 @@ $top_prods = $topProds['body']['data']['products'] ?? [];
 $season    = $seasonal['body']['data']['months']   ?? [];
 $peak_hrs  = $peaks['body']['data']['hours']       ?? [];
 $repeat    = $repeats['body']['data']['customers'] ?? [];
+$payment_rows = $ordersForPayments['body']['data']['orders'] ?? [];
+
+$payment_method_counts = [];
+foreach ($payment_rows as $row) {
+    $method = trim((string)($row['payment_method'] ?? ''));
+    if ($method === '') {
+        $method = 'unknown';
+    }
+    if (!isset($payment_method_counts[$method])) {
+        $payment_method_counts[$method] = 0;
+    }
+    $payment_method_counts[$method]++;
+}
 
 $page_title = 'Reports — Admin — ' . APP_NAME;
 include __DIR__ . '/../../includes/header.php';
@@ -103,6 +119,31 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <div class="report-grid">
+      <div class="admin-card">
+        <div class="admin-card-header"><h3>Order Status Distribution</h3></div>
+        <div class="admin-card-body">
+          <div class="chart-wrap"><canvas id="orderStatusPieChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-header"><h3>Payment Methods</h3></div>
+        <div class="admin-card-body">
+          <div class="chart-wrap"><canvas id="paymentMethodPieChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-grid">
+      <div class="admin-card">
+        <div class="admin-card-header"><h3>Top Product Sales (Revenue)</h3></div>
+        <div class="admin-card-body">
+          <div class="chart-wrap"><canvas id="topProductSalesChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-grid">
       <!-- Top Products -->
       <div class="admin-card">
         <div class="admin-card-header"><h3>Top Selling Products</h3></div>
@@ -117,7 +158,7 @@ include __DIR__ . '/../../includes/header.php';
                     <div style="font-size:11px;color:#a0aec0;"><?= h($tp['model_number'] ?? '') ?></div>
                   </td>
                   <td style="text-align:right;font-weight:700;"><?= number_format($tp['units_sold'] ?? 0) ?></td>
-                  <td style="text-align:right;color:#38a169;font-weight:700;"><?= format_price($tp['total_revenue'] ?? 0) ?></td>
+                  <td style="text-align:right;color:#38a169;font-weight:700;"><?= format_price($tp['total_revenue'] ?? $tp['revenue_generated'] ?? 0) ?></td>
                 </tr>
               <?php endforeach; ?>
               <?php if (empty($top_prods)): ?>
@@ -161,6 +202,26 @@ include __DIR__ . '/../../includes/header.php';
 <script>
 var revData  = <?= json_encode($rev_data) ?>;
 var seasData = <?= json_encode($season) ?>;
+var orderStats = <?= json_encode($ord) ?>;
+var paymentMethodCounts = <?= json_encode($payment_method_counts) ?>;
+var topProductData = <?= json_encode(array_slice($top_prods, 0, 10)) ?>;
+
+function createEmptyChartMessage(canvasId, message) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas || !canvas.parentElement) return;
+  canvas.style.display = 'none';
+
+  var el = document.createElement('div');
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.justifyContent = 'center';
+  el.style.height = '100%';
+  el.style.minHeight = '220px';
+  el.style.color = '#a0aec0';
+  el.style.fontSize = '13px';
+  el.textContent = message;
+  canvas.parentElement.appendChild(el);
+}
 
 if(revData && revData.length){
   new Chart(document.getElementById('revenueChart'), {
@@ -180,6 +241,8 @@ if(revData && revData.length){
       scales:{ y:{ beginAtZero:true, ticks:{ callback:function(v){ return '₱'+v.toLocaleString(); } } } }
     }
   });
+} else {
+  createEmptyChartMessage('revenueChart', 'No revenue trend data for this period.');
 }
 
 if(seasData && seasData.length){
@@ -200,6 +263,144 @@ if(seasData && seasData.length){
       scales:{ y:{ beginAtZero:true, ticks:{ callback:function(v){ return '₱'+v.toLocaleString(); } } } }
     }
   });
+} else {
+  createEmptyChartMessage('seasonChart', 'No seasonal sales data yet.');
+}
+
+if (orderStats) {
+  var pendingCount = Number(orderStats.pending_orders || 0);
+  var deliveredCount = Number(orderStats.delivered_orders || 0);
+  var totalOrders = Number(orderStats.total_orders || 0);
+  var othersCount = Math.max(totalOrders - pendingCount - deliveredCount, 0);
+  var pieValues = [pendingCount, deliveredCount, othersCount];
+  var pieTotal = pieValues.reduce(function(sum, val){ return sum + val; }, 0);
+
+  if (pieTotal > 0) {
+    new Chart(document.getElementById('orderStatusPieChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Pending', 'Delivered', 'Other Statuses'],
+        datasets: [{
+          data: pieValues,
+          backgroundColor: ['#f6ad55', '#48bb78', '#63b3ed'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var value = Number(ctx.parsed || 0);
+                var percent = pieTotal ? ((value / pieTotal) * 100).toFixed(1) : '0.0';
+                return ctx.label + ': ' + value.toLocaleString() + ' (' + percent + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    createEmptyChartMessage('orderStatusPieChart', 'No order data yet.');
+  }
+} else {
+  createEmptyChartMessage('orderStatusPieChart', 'Order summary unavailable.');
+}
+
+if (paymentMethodCounts && Object.keys(paymentMethodCounts).length) {
+  var methodLabels = Object.keys(paymentMethodCounts).map(function(key) {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, function(char) { return char.toUpperCase(); });
+  });
+  var methodValues = Object.keys(paymentMethodCounts).map(function(key) {
+    return Number(paymentMethodCounts[key] || 0);
+  });
+  var methodTotal = methodValues.reduce(function(sum, val){ return sum + val; }, 0);
+
+  if (methodTotal > 0) {
+    new Chart(document.getElementById('paymentMethodPieChart'), {
+      type: 'pie',
+      data: {
+        labels: methodLabels,
+        datasets: [{
+          data: methodValues,
+          backgroundColor: ['#3182ce', '#38a169', '#ed8936', '#805ad5', '#e53e3e', '#718096'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var value = Number(ctx.parsed || 0);
+                var percent = methodTotal ? ((value / methodTotal) * 100).toFixed(1) : '0.0';
+                return ctx.label + ': ' + value.toLocaleString() + ' (' + percent + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    createEmptyChartMessage('paymentMethodPieChart', 'No payment method data yet.');
+  }
+} else {
+  createEmptyChartMessage('paymentMethodPieChart', 'No payment method data yet.');
+}
+
+if (topProductData && topProductData.length) {
+  var productLabels = topProductData.map(function(item){
+    return item.name || item.model_number || 'Unknown Product';
+  });
+  var productSales = topProductData.map(function(item){
+    return Number(item.total_revenue || item.revenue_generated || 0);
+  });
+
+  new Chart(document.getElementById('topProductSalesChart'), {
+    type: 'bar',
+    data: {
+      labels: productLabels,
+      datasets: [{
+        label: 'Revenue (₱)',
+        data: productSales,
+        backgroundColor: 'rgba(56, 161, 105, 0.8)',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return 'Revenue: ₱' + Number(ctx.parsed.x || 0).toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(v){ return '₱' + Number(v).toLocaleString(); }
+          }
+        }
+      }
+    }
+  });
+} else {
+  createEmptyChartMessage('topProductSalesChart', 'No product sales data yet.');
 }
 </script>
 

@@ -107,7 +107,7 @@ include __DIR__ . '/../includes/header.php';
       <?php if (!empty($order['delivery_proof_url'])): ?>
         <div>
           <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Proof</div>
-          <div style="font-size:14px;"><a href="<?= h($order['delivery_proof_url']) ?>" target="_blank" style="color:#3182ce;">View proof image</a></div>
+          <div style="font-size:14px;"><a href="<?= BASE_URL ?>/pages/proof.php?path=<?= urlencode($order['delivery_proof_url']) ?>" target="_blank" style="color:#3182ce;">View proof image</a></div>
         </div>
       <?php endif; ?>
     </div>

@@ -80,7 +80,15 @@ include __DIR__ . '/../../includes/header.php';
               <td><span class="badge badge-<?= h($order['delivery_status'] ?? 'pending') ?>"><?= h(ucfirst(str_replace('_', ' ', $order['delivery_status'] ?? 'Pending'))) ?></span></td>
               <td>
                 <?php if (!empty($order['delivery_proof_url'])): ?>
-                  <a href="http://localhost:3000<?= h($order['delivery_proof_url']) ?>" target="_blank" class="btn-sm btn-sm-green">View proof</a>
+                  <div style="display:grid;gap:6px;">
+                    <a href="<?= BASE_URL ?>/pages/proof.php?path=<?= urlencode($order['delivery_proof_url']) ?>" target="_blank" class="btn-sm btn-sm-green">View proof</a>
+                    <button
+                      type="button"
+                      class="btn-sm btn-sm-red proof-delete"
+                      data-order-id="<?= h($order['id']) ?>"
+                      style="font-size:11px;"
+                    >Delete proof</button>
+                  </div>
                 <?php else: ?>
                   <span class="badge badge-pending">No proof</span>
                 <?php endif; ?>
@@ -223,6 +231,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function deleteDeliveryProof(orderId) {
+    const attempts = [
+      {
+        method: 'DELETE',
+        url: `${API_BASE}/orders/${orderId}/delivery-proof`,
+        body: null,
+      },
+      {
+        method: 'PATCH',
+        url: `${API_BASE}/orders/${orderId}/delivery`,
+        body: {
+          remove_delivery_proof: true,
+          delivery_proof_url: null,
+        },
+      },
+      {
+        method: 'PATCH',
+        url: `${API_BASE}/orders/${orderId}/delivery`,
+        body: {
+          clear_delivery_proof: true,
+          delivery_proof_base64: null,
+          delivery_proof_url: null,
+        },
+      },
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        const response = await fetch(attempt.url, {
+          method: attempt.method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          },
+          body: attempt.body ? JSON.stringify(attempt.body) : null,
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) {
+          return { ok: true, payload };
+        }
+      } catch (err) {
+        console.error('deleteDeliveryProof attempt failed', err);
+      }
+    }
+
+    return {
+      ok: false,
+      payload: { message: 'Unable to delete proof right now. Please try again.' },
+    };
+  }
+
+  async function handleDeleteProof(event) {
+    const button = event.currentTarget;
+    const orderId = button.dataset.orderId;
+    const messageEl = document.getElementById(`delivery-msg-${orderId}`);
+    if (!orderId || !messageEl) return;
+
+    if (!confirm('Delete the uploaded proof photo for this order?')) {
+      return;
+    }
+
+    button.disabled = true;
+    messageEl.textContent = 'Deleting proof...';
+
+    const result = await deleteDeliveryProof(orderId);
+    if (!result.ok) {
+      messageEl.textContent = result.payload.message || 'Failed to delete proof.';
+      button.disabled = false;
+      return;
+    }
+
+    messageEl.textContent = 'Proof deleted. Refreshing...';
+    setTimeout(() => window.location.reload(), 800);
+  }
+
   async function handleDeliverySave(event) {
     const button = event.currentTarget;
     const form = button.closest('.delivery-form');
@@ -291,6 +374,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.proof-upload').forEach(input => {
     input.addEventListener('change', () => uploadProof(input));
+  });
+
+  document.querySelectorAll('.proof-delete').forEach(button => {
+    button.addEventListener('click', handleDeleteProof);
   });
 });
 </script>
