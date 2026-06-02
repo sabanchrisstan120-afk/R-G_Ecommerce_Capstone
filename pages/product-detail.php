@@ -86,417 +86,6 @@ if (empty($images) && !empty($product['image_url'])) {
 }
 ?>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     GALLERY STYLES
-════════════════════════════════════════════════════════════════ -->
-<style>
-/* ── Reset & tokens ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --accent:       #ee4d2d;      /* Shopee orange-red */
-  --accent-light: #fff3f0;
-  --border:       #e8e8e8;
-  --text-main:    #212121;
-  --text-muted:   #757575;
-  --radius:       8px;
-  --thumb-size:   72px;
-  --gap:          10px;
-  --trans:        0.22s ease;
-}
-
-/* ── Page shell ── */
-.pd-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px 16px 60px;
-}
-
-/* breadcrumb */
-.pd-crumb {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-.pd-crumb a { color: #1a94ff; text-decoration: none; }
-.pd-crumb a:hover { text-decoration: underline; }
-.pd-crumb span { color: #bdbdbd; }
-
-/* ── Main card grid ── */
-.pd-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0,0,0,.07);
-  display: grid;
-  grid-template-columns: 520px 1fr;
-  gap: 32px;
-  padding: 28px;
-}
-
-/* ════════════════════════════════
-   GALLERY COLUMN
-════════════════════════════════ */
-.pd-gallery {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  user-select: none;
-}
-
-/* ── Thumbnail strip (left sidebar) ── */
-.pd-thumbs {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: var(--thumb-size);
-  flex-shrink: 0;
-}
-
-.pd-thumb-viewport {
-  overflow: hidden;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pd-thumb {
-  width: var(--thumb-size);
-  height: var(--thumb-size);
-  border-radius: 6px;
-  border: 2px solid var(--border);
-  overflow: hidden;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: border-color var(--trans), transform var(--trans), box-shadow var(--trans);
-  background: #f5f5f5;
-}
-.pd-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform var(--trans);
-}
-.pd-thumb:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(238,77,45,.12);
-  transform: translateY(-1px);
-}
-.pd-thumb:hover img { transform: scale(1.06); }
-.pd-thumb.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(238,77,45,.18);
-}
-
-/* thumb scroll arrows */
-.pd-thumb-arrow {
-  width: var(--thumb-size);
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-  font-size: 13px;
-  color: var(--text-muted);
-  transition: background var(--trans), color var(--trans);
-}
-.pd-thumb-arrow:hover { background: #eee; color: var(--text-main); }
-.pd-thumb-arrow.hidden { visibility: hidden; pointer-events: none; }
-
-/* ── Main image area ── */
-.pd-main-img-wrap {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  background: #f7f7f7;
-  aspect-ratio: 1 / 1;
-  max-height: 440px;
-}
-
-/* zoom lens overlay */
-.pd-main-img-wrap::after {
-  content: '🔍';
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  font-size: 18px;
-  background: rgba(255,255,255,.85);
-  backdrop-filter: blur(4px);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity var(--trans);
-  pointer-events: none;
-}
-.pd-main-img-wrap:hover::after { opacity: 1; }
-
-.pd-main-slides {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.pd-slide {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.32s ease, transform 0.32s ease;
-  transform: scale(1.012);
-}
-.pd-slide.active {
-  opacity: 1;
-  transform: scale(1);
-  z-index: 1;
-}
-.pd-slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  transition: transform 0.4s ease;
-}
-.pd-main-img-wrap:hover .pd-slide.active img {
-  transform: scale(1.04);
-}
-
-/* Prev / Next arrows on main image */
-.pd-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,.18);
-  font-size: 18px;
-  color: var(--text-main);
-  opacity: 0;
-  transition: opacity var(--trans), background var(--trans), transform var(--trans);
-}
-.pd-arrow.prev { left: 10px; }
-.pd-arrow.next { right: 10px; }
-.pd-main-img-wrap:hover .pd-arrow { opacity: 1; }
-.pd-arrow:hover { background: #fff; transform: translateY(-50%) scale(1.1); }
-.pd-arrow:active { transform: translateY(-50%) scale(.97); }
-
-/* dot indicators */
-.pd-dots {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 5px;
-  z-index: 10;
-}
-.pd-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.55);
-  border: 1px solid rgba(0,0,0,.18);
-  transition: background var(--trans), transform var(--trans);
-  cursor: pointer;
-}
-.pd-dot.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: scale(1.4);
-}
-
-/* No image fallback */
-.pd-no-img {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 72px;
-  color: #ccc;
-}
-
-/* ════════════════════════════════
-   INFO COLUMN
-════════════════════════════════ */
-.pd-info { display: flex; flex-direction: column; gap: 14px; }
-
-.pd-brand {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-light);
-  border: 1px solid #fad4cb;
-  border-radius: 4px;
-  padding: 3px 8px;
-}
-
-.pd-name {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1.35;
-}
-
-.pd-model {
-  font-size: 12px;
-  color: var(--text-muted);
-  background: #f5f5f5;
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.pd-price-row {
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.pd-price {
-  font-size: 30px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: -.5px;
-}
-
-.pd-stock-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-.stock-in   { background: #e6f4ea; color: #1e7e34; }
-.stock-low  { background: #fff3e0; color: #e65100; }
-.stock-out  { background: #fce8e8; color: #c62828; }
-
-.pd-desc {
-  font-size: 14px;
-  color: #555;
-  line-height: 1.75;
-  border-left: 3px solid var(--border);
-  padding-left: 12px;
-}
-
-/* specs table */
-.pd-specs {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.pd-specs tr { border-bottom: 1px solid #f0f0f0; }
-.pd-specs tr:last-child { border-bottom: none; }
-.pd-specs td {
-  padding: 9px 8px;
-  vertical-align: top;
-}
-.pd-specs td:first-child {
-  color: var(--text-muted);
-  width: 40%;
-  font-weight: 500;
-}
-.pd-specs td:last-child { color: var(--text-main); font-weight: 600; }
-
-/* CTA buttons */
-.pd-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-
-.btn-order {
-  flex: 1;
-  min-width: 140px;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 700;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background: var(--accent);
-  color: #fff;
-  letter-spacing: .02em;
-  transition: background var(--trans), transform var(--trans), box-shadow var(--trans);
-  box-shadow: 0 4px 14px rgba(238,77,45,.35);
-}
-.btn-order:hover {
-  background: #d93f20;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(238,77,45,.45);
-}
-.btn-order:active { transform: translateY(0); }
-.btn-order.secondary {
-  background: #fff;
-  color: var(--accent);
-  border: 2px solid var(--accent);
-  box-shadow: none;
-}
-.btn-order.secondary:hover { background: var(--accent-light); }
-.btn-order:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-/* ════════════════════════════════
-   RESPONSIVE
-════════════════════════════════ */
-@media (max-width: 900px) {
-  .pd-card {
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 20px;
-  }
-  .pd-gallery { flex-direction: column-reverse; }
-  .pd-thumbs {
-    flex-direction: row;
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .pd-thumbs::-webkit-scrollbar { display: none; }
-  .pd-thumb-viewport { flex-direction: row; flex: unset; width: 100%; }
-  .pd-thumb-arrow { width: 26px; height: var(--thumb-size); writing-mode: horizontal-tb; }
-  .pd-main-img-wrap { max-height: 320px; }
-  .pd-arrow { opacity: 1; }
-  .pd-name { font-size: 18px; }
-  .pd-price { font-size: 24px; }
-}
-
-@media (max-width: 480px) {
-  --thumb-size: 58px;
-  .pd-main-img-wrap { max-height: 260px; }
-}
-</style>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     PAGE MARKUP
-════════════════════════════════════════════════════════════════ -->
 <div class="pd-wrap">
 
   <!-- Breadcrumb -->
@@ -594,20 +183,13 @@ if (empty($images) && !empty($product['image_url'])) {
         <?php endif; ?>
       </div>
       <!-- Ratings -->
-<div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-
-  <div style="font-size:18px;color:#f6ad55;font-weight:700;">
-    ⭐ <?= number_format($average_rating, 1) ?>
-  </div>
-
-  <div style="font-size:14px;color:#718096;">
-    <?= count($reviews) ?> Reviews
-  </div>
-
-</div>
+      <div class="pd-stats">
+        <div class="avg">⭐ <?= number_format($average_rating, 1) ?></div>
+        <div class="count"><?= count($reviews) ?> Reviews</div>
+      </div>
 
 <!-- Review List -->
-<div style="margin-top:20px;">
+<div class="review-list">
 <?php
 
 $review_res = api_request(
@@ -618,57 +200,22 @@ $review_res = api_request(
 $reviews = $review_res['body']['reviews'] ?? [];
 
 ?>
-  <h3 style="margin-bottom:15px;font-size:18px;">
-    Customer Reviews
-  </h3>
+  <h3 class="section-title">Customer Reviews</h3>
 
   <?php if (empty($reviews)): ?>
 
-    <div style="
-      padding:20px;
-      background:#f7fafc;
-      border-radius:10px;
-      color:#718096;
-    ">
-      No reviews yet.
-    </div>
+    <div class="pd-review-empty">No reviews yet.</div>
 
  <?php else: ?>
 
   <?php foreach ($reviews as $review): ?>
 
-    <div style="
-      padding:18px;
-      border:1px solid #e2e8f0;
-      border-radius:10px;
-      margin-bottom:15px;
-      background:#fff;
-    ">
-
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        margin-bottom:8px;
-      ">
-
-        <strong>
-          <?= h(trim(($review['first_name'] ?? '') . ' ' . ($review['last_name'] ?? ''))) ?>
-        </strong>
-
-        <span style="color:#f6ad55;">
-          <?= str_repeat('⭐', intval($review['rating'] ?? 0)) ?>
-        </span>
-
+    <div class="review-card">
+      <div class="review-meta">
+        <div class="review-author"><?= h(trim(($review['first_name'] ?? '') . ' ' . ($review['last_name'] ?? ''))) ?></div>
+        <div class="review-rating"><?= str_repeat('⭐', intval($review['rating'] ?? 0)) ?></div>
       </div>
-
-      <div style="
-        color:#4a5568;
-        line-height:1.6;
-        font-size:14px;
-      ">
-        <?= h($review['comment'] ?? '') ?>
-      </div>
-
+      <div class="review-body"><?= h($review['comment'] ?? '') ?></div>
     </div>
 
   <?php endforeach; ?>
@@ -701,17 +248,42 @@ $reviews = $review_res['body']['reviews'] ?? [];
       <!-- CTA -->
       <div class="pd-cta">
         <?php if (is_logged_in() && $qty > 0): ?>
-          <a href="/rg-trading-php/pages/checkout.php?product_id=<?= h($product['id']) ?>" style="flex:1;display:block;">
-            <button class="btn-order" style="width:100%;">Order Now</button>
+          <a href="<?= BASE_URL ?>/pages/checkout.php?product_id=<?= h($product['id']) ?>" class="cta-full">
+            <button class="btn-order btn-full">Order Now</button>
           </a>
         <?php elseif (!is_logged_in()): ?>
-          <a href="/rg-trading-php/login.php" style="flex:1;display:block;">
-            <button class="btn-order secondary" style="width:100%;">Login to Order</button>
+          <a href="<?= BASE_URL ?>/login.php" class="cta-full">
+            <button class="btn-order secondary btn-full">Login to Order</button>
           </a>
         <?php else: ?>
-          <button class="btn-order" disabled style="width:100%;">Out of Stock</button>
+          <button class="btn-order btn-full" disabled>Out of Stock</button>
         <?php endif; ?>
       </div>
+
+
+      <?php if (is_logged_in() && $qty > 0): ?>
+
+
+
+        
+
+
+  <!-- ADD TO CART BUTTON -->
+  <form method="POST" action="<?= BASE_URL ?>/pages/add-to-cart.php">
+    <input type="hidden" name="product_id" value="<?= h($product['id']) ?>">
+    <input type="hidden" name="product_name" value="<?= h($product['name']) ?>">
+    <input type="hidden" name="price" value="<?= h($product['price']) ?>">
+    <input type="hidden" name="image" value="<?= h($images[0] ?? '') ?>">
+    <input type="hidden" name="product_id" value="<?= h($product['id']) ?>">
+
+<input type="number" name="qty" value="1" min="1" max="<?= (int)$product['stock_qty'] ?>">
+
+    <button type="submit" name="add_to_cart" class="btn-order secondary btn-full">
+      Add to Cart
+    </button>
+  </form>
+
+<?php endif; ?>
     <!-- ADD REVIEW -->
 <?php
 $can_review = false;
@@ -742,100 +314,33 @@ if (is_logged_in()) {
 
 <?php if ($can_review): ?>
 
-<div style="
-  margin-top:30px;
-  padding:25px;
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:12px;
-">
-
-  <h3 style="margin-bottom:18px;">
-    Write a Review
-  </h3>
+<div class="card-panel">
+  <h3 style="margin-bottom:18px;">Write a Review</h3>
 
   <form method="POST">
-
-    <input type="hidden"
-           name="submit_review"
-           value="1">
-
-    <input type="hidden"
-           name="product_id"
-           value="<?= h($product['id']) ?>">
+    <input type="hidden" name="submit_review" value="1">
+    <input type="hidden" name="product_id" value="<?= h($product['id']) ?>">
 
     <!-- Rating -->
-    <div style="margin-bottom:15px;">
-
-      <label style="
-        display:block;
-        margin-bottom:8px;
-        font-weight:600;
-      ">
-        Rating
-      </label>
-
-      <select name="rating"
-              required
-              style="
-                width:100%;
-                padding:10px;
-                border:1px solid #ddd;
-                border-radius:8px;
-              ">
-
+    <div class="form-group">
+      <label class="form-label-strong">Rating</label>
+      <select name="rating" required class="form-select">
         <option value="">Select Rating</option>
         <option value="5">⭐⭐⭐⭐⭐ (5)</option>
         <option value="4">⭐⭐⭐⭐ (4)</option>
         <option value="3">⭐⭐⭐ (3)</option>
         <option value="2">⭐⭐ (2)</option>
         <option value="1">⭐ (1)</option>
-
       </select>
-
     </div>
 
     <!-- Comment -->
-    <div style="margin-bottom:15px;">
-
-      <label style="
-        display:block;
-        margin-bottom:8px;
-        font-weight:600;
-      ">
-        Comment
-      </label>
-
-      <textarea
-        name="comment"
-        required
-        rows="4"
-        placeholder="Write your review..."
-        style="
-          width:100%;
-          padding:12px;
-          border:1px solid #ddd;
-          border-radius:8px;
-          resize:vertical;
-        "
-      ></textarea>
-
+    <div class="form-group">
+      <label class="form-label-strong">Comment</label>
+      <textarea name="comment" required rows="4" placeholder="Write your review..." class="form-textarea"></textarea>
     </div>
-<button type="submit"
-        id="reviewBtn"
-        style="
-          background:#ee4d2d;
-          color:#fff;
-          border:none;
-          padding:12px 20px;
-          border-radius:8px;
-          cursor:pointer;
-          font-weight:600;
-        ">
-  Submit Review
-</button>
+    <button type="submit" id="reviewBtn" class="btn-submit">Submit Review</button>
   </form>
-
 </div>
 
 <?php endif; ?>
@@ -973,29 +478,10 @@ document.querySelector('form').addEventListener('submit', function () {
      PRODUCT RECOMMENDATIONS
 ════════════════════════════════════════════════════════════════ -->
 <?php if (!empty($recommendations)): ?>
-<div class="pd-wrap" style="padding-top:0;">
-  <div style="
-    background:#fff;
-    border-radius:12px;
-    box-shadow:0 2px 16px rgba(0,0,0,.07);
-    padding:28px;
-    margin-top:24px;
-  ">
-    <h2 style="
-      font-size:18px;
-      font-weight:700;
-      color:#212121;
-      margin-bottom:20px;
-      padding-bottom:12px;
-      border-bottom:2px solid #ee4d2d;
-      display:inline-block;
-    ">You Might Also Like</h2>
-
-    <div style="
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-      gap:16px;
-    ">
+<div class="pd-wrap rec-wrap">
+  <div class="rec-card">
+    <h2 class="rec-title">You Might Also Like</h2>
+    <div class="rec-grid">
       <?php foreach ($recommendations as $rec):
         $rec_images = $rec['image_urls'] ?? [];
         if (is_string($rec_images)) $rec_images = json_decode($rec_images, true) ?? [];
@@ -1003,76 +489,31 @@ document.querySelector('form').addEventListener('submit', function () {
         $rec_img = $rec_images[0] ?? null;
         $rec_qty = (int)($rec['stock_qty'] ?? 0);
       ?>
-      <a href="/rg-trading-php/pages/product-detail.php?id=<?= h($rec['id']) ?>"
-         style="text-decoration:none;color:inherit;">
-        <div style="
-          border:1px solid #e8e8e8;
-          border-radius:10px;
-          overflow:hidden;
-          transition:box-shadow .22s ease, transform .22s ease;
-          background:#fff;
-          cursor:pointer;
-        "
-        onmouseover="this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)';this.style.transform='translateY(-3px)'"
-        onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+      <a href="<?= BASE_URL ?>/pages/product-detail.php?id=<?= h($rec['id']) ?>" style="text-decoration:none;color:inherit;">
+        <div class="rec-item">
 
           <!-- Image -->
-          <div style="
-            width:100%;
-            aspect-ratio:1/1;
-            background:#f7f7f7;
-            overflow:hidden;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          ">
+          <div class="rec-img">
             <?php if ($rec_img): ?>
               <img src="<?= h($rec_img) ?>"
                    alt="<?= h($rec['name']) ?>"
-                   style="width:100%;height:100%;object-fit:cover;transition:transform .3s ease;"
-                   onmouseover="this.style.transform='scale(1.06)'"
-                   onmouseout="this.style.transform='scale(1)'">
-            <?php else: ?>
+                   class="rec-img-thumb">
+              <?php else: ?>
               <span style="font-size:40px;color:#ccc;">❄️</span>
             <?php endif; ?>
           </div>
 
           <!-- Info -->
-          <div style="padding:12px;">
-            <div style="
-              font-size:10px;
-              font-weight:700;
-              color:#ee4d2d;
-              text-transform:uppercase;
-              letter-spacing:.06em;
-              margin-bottom:4px;
-            "><?= h($rec['brand']) ?></div>
-
-            <div style="
-              font-size:13px;
-              font-weight:600;
-              color:#212121;
-              line-height:1.4;
-              margin-bottom:8px;
-              display:-webkit-box;
-              -webkit-line-clamp:2;
-              -webkit-box-orient:vertical;
-              overflow:hidden;
-            "><?= h($rec['name']) ?></div>
-
-            <div style="
-              font-size:16px;
-              font-weight:800;
-              color:#ee4d2d;
-              margin-bottom:6px;
-            "><?= format_price($rec['price']) ?></div>
-
+          <div class="rec-info">
+            <div class="rec-brand"><?= h($rec['brand']) ?></div>
+            <div class="rec-name"><?= h($rec['name']) ?></div>
+            <div class="rec-price"><?= format_price($rec['price']) ?></div>
             <?php if ($rec_qty <= 0): ?>
-              <span style="font-size:11px;color:#c62828;font-weight:600;">● Out of Stock</span>
+              <span class="rec-badge rec-badge-out">● Out of Stock</span>
             <?php elseif ($rec_qty <= 5): ?>
-              <span style="font-size:11px;color:#e65100;font-weight:600;">● Only <?= $rec_qty ?> left</span>
+              <span class="rec-badge rec-badge-low">● Only <?= $rec_qty ?> left</span>
             <?php else: ?>
-              <span style="font-size:11px;color:#1e7e34;font-weight:600;">● In Stock</span>
+              <span class="rec-badge rec-badge-in">● In Stock</span>
             <?php endif; ?>
           </div>
 

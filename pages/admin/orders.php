@@ -24,8 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_id'])) {
         'PATCH',
         '/admin/orders/' . $_POST['update_order_id'] . '/status',
         [
-            'status'         => $_POST['new_status'] ?? null,
-            'payment_status' => $_POST['new_payment_status'] ?? null
+            'status'                 => $_POST['new_status'] ?? null,
+            'payment_status'         => $_POST['new_payment_status'] ?? null,
+            'expected_delivery_date' => trim($_POST['expected_delivery_date'] ?? '') ?: null,
+            'rider_id'               => trim($_POST['rider_id'] ?? '') ?: null,
+            'delivery_status'        => trim($_POST['delivery_status'] ?? '') ?: null,
+            'delivery_note'          => trim($_POST['delivery_note'] ?? '') ?: null,
+            'delivery_proof_url'     => trim($_POST['delivery_proof_url'] ?? '') ?: null,
         ],
         true
     );
@@ -56,6 +61,10 @@ if ($search !== '') $query_params['search'] = $search;
 
 $params = http_build_query($query_params);
 
+$riders = [];
+$rider_result = api_request('GET', '/admin/users?role=rider&limit=100', [], true);
+$riders = $rider_result['body']['data']['users'] ?? $rider_result['body']['users'] ?? [];
+
 /* ===============================
    Fetch Orders
 =================================*/
@@ -75,6 +84,7 @@ include __DIR__ . '/../../includes/header.php';
   <a href="/rg-trading-php/pages/admin/dashboard.php">📊 Dashboard</a>
   <a href="/rg-trading-php/pages/admin/products.php">❄️ Products</a>
   <a href="/rg-trading-php/pages/admin/orders.php" class="active">📦 Orders</a>
+  <a href="/rg-trading-php/pages/admin/rider-activity.php">🚴 Rider Activity</a>
   <a href="/rg-trading-php/pages/admin/users.php">👥 Users</a>
   <a href="/rg-trading-php/pages/admin/categories.php">🏷️ Categories</a>
   <a href="/rg-trading-php/pages/admin/reports.php">📈 Reports</a>
@@ -134,8 +144,11 @@ include __DIR__ . '/../../includes/header.php';
             <th>Customer</th>
             <th>Delivery Address</th>
             <th>Date</th>
+            <th>Expected Delivery</th>
             <th>Total</th>
+            <th>Rider</th>
             <th>Status</th>
+            <th>Delivery</th>
             <th>Payment</th>
             <th>Update</th>
           </tr>
@@ -143,7 +156,7 @@ include __DIR__ . '/../../includes/header.php';
         <tbody>
           <?php if (empty($orders)): ?>
             <tr>
-              <td colspan="8" style="text-align:center;color:#a0aec0;padding:30px;">
+              <td colspan="11" style="text-align:center;color:#a0aec0;padding:30px;">
                 No orders found
               </td>
             </tr>
@@ -179,13 +192,27 @@ include __DIR__ . '/../../includes/header.php';
                   <?= !empty($o['ordered_at']) ? date('M d, Y', strtotime($o['ordered_at'])) : '—' ?>
                 </td>
 
+                <td style="font-size:12px;">
+                  <?= !empty($o['expected_delivery_date']) ? date('M d, Y', strtotime($o['expected_delivery_date'])) : '—' ?>
+                </td>
+
                 <td>
                   <strong><?= format_price($o['total_amount'] ?? 0) ?></strong>
                 </td>
 
                 <td>
+                  <?= h(trim(($o['rider_first_name'] ?? '') . ' ' . ($o['rider_last_name'] ?? ''))) ?: '—' ?>
+                </td>
+
+                <td>
                   <span class="badge badge-<?= h($o['status'] ?? '') ?>">
                     <?= h(ucfirst($o['status'] ?? '')) ?>
+                  </span>
+                </td>
+
+                <td>
+                  <span class="badge badge-<?= h($o['delivery_status'] ?? '') ?>">
+                    <?= h(ucfirst(str_replace('_', ' ', $o['delivery_status'] ?? ''))) ?>
                   </span>
                 </td>
 
@@ -196,7 +223,7 @@ include __DIR__ . '/../../includes/header.php';
                 </td>
 
                 <td>
-                  <form method="POST" style="display:flex;gap:4px;">
+                  <form method="POST" style="display:grid;gap:6px;">
                     <input type="hidden" name="update_order_id" value="<?= h($o['id']) ?>">
 
                     <select name="new_status" style="font-size:11px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;">
@@ -216,6 +243,42 @@ include __DIR__ . '/../../includes/header.php';
                         </option>
                       <?php endforeach; ?>
                     </select>
+
+                    <input type="date" name="expected_delivery_date"
+                           value="<?= !empty($o['expected_delivery_date']) ? date('Y-m-d', strtotime($o['expected_delivery_date'])) : '' ?>"
+                           style="font-size:11px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+
+                    <?php if (!empty($riders)): ?>
+                      <select name="rider_id" style="font-size:11px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+                        <option value="">Assign rider...</option>
+                        <?php foreach ($riders as $rider): ?>
+                          <option value="<?= h($rider['id']) ?>" <?= ($o['rider_id'] ?? '') === $rider['id'] ? 'selected' : '' ?>>
+                            <?= h(trim($rider['first_name'] . ' ' . $rider['last_name'])) ?> (<?= h($rider['email']) ?>)
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    <?php else: ?>
+                      <input type="text" name="rider_id" value="<?= h($o['rider_id'] ?? '') ?>"
+                             placeholder="Rider ID"
+                             style="font-size:11px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+                    <?php endif; ?>
+
+                    <select name="delivery_status" style="font-size:11px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;">
+                      <option value="">Delivery...</option>
+                      <?php foreach (['pending','out_for_delivery','delivered','cannot_find_customer','failed','damaged'] as $ds): ?>
+                        <option value="<?= $ds ?>" <?= ($o['delivery_status'] ?? '') === $ds ? 'selected' : '' ?>>
+                          <?= ucfirst(str_replace('_', ' ', $ds)) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+
+                    <input type="text" name="delivery_note" value="<?= h($o['delivery_note'] ?? '') ?>"
+                           placeholder="Delivery note"
+                           style="font-size:11px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+
+                    <input type="text" name="delivery_proof_url" value="<?= h($o['delivery_proof_url'] ?? '') ?>"
+                           placeholder="Proof URL"
+                           style="font-size:11px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
 
                     <button type="submit" class="btn-sm btn-sm-blue">Save</button>
                   </form>

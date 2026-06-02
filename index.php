@@ -31,8 +31,8 @@ include __DIR__ . '/includes/header.php';
     <h1>Stay Cool with R&G Trading</h1>
     <p>Premium air conditioner units for every home and business in Iloilo</p>
     <div class="hero-search">
-      <form method="GET" style="display:contents;">
-        <input type="text" name="search" placeholder="Search by brand, model, or type..." value="<?= h($search) ?>">
+      <form method="GET" class="form-contents">
+        <input type="text" name="search" placeholder="Search by brand, model, or type..." value="<?= h($search) ?>" class="search-input">
         <button type="submit">Search</button>
       </form>
     </div>
@@ -64,15 +64,15 @@ include __DIR__ . '/includes/header.php';
         <?php foreach ($categories as $c) { if ($c['slug'] === $category) echo h($c['name']); } ?>
       <?php endif; ?>
     </h1>
-    <p><?= $total ?> product<?= $total !== 1 ? 's' : '' ?> found
-      — <a href="/rg-trading-php/" style="color:#3182ce;">Clear filters</a>
+      <p><?= $total ?> product<?= $total !== 1 ? 's' : '' ?> found
+      — <a href="<?= BASE_URL ?>/" class="btn-link">Clear filters</a>
     </p>
   </div>
   <?php endif; ?>
 
   <form method="GET" class="filter-bar">
     <?php if ($category): ?><input type="hidden" name="category" value="<?= h($category) ?>"><?php endif; ?>
-    <input type="text" name="search" placeholder="Search..." value="<?= h($search) ?>" style="min-width:220px;">
+    <input type="text" name="search" placeholder="Search..." value="<?= h($search) ?>" class="search-input">
     <select name="category">
       <option value="">All Categories</option>
       <?php foreach ($categories as $cat): ?>

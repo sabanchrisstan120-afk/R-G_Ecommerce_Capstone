@@ -8,7 +8,7 @@ $order  = $result['body']['data']['order'] ?? null;
 
 if (!$order) {
     set_flash('error', 'Order not found.');
-    header('Location: /rg-trading-php/pages/orders.php'); exit;
+    header('Location: ' . BASE_URL . '/pages/orders.php'); exit;
 }
 
 // Order status steps
@@ -33,7 +33,7 @@ include __DIR__ . '/../includes/header.php';
 <div class="main-content" style="max-width:780px;">
   <div class="page-header">
     <h1>Order #<?= h($order['order_number']) ?></h1>
-    <p><a href="/rg-trading-php/pages/orders.php" style="color:#3182ce;">← Back to My Orders</a></p>
+    <p><a href="<?= BASE_URL ?>/pages/orders.php" style="color:#3182ce;">← Back to My Orders</a></p>
   </div>
 
   <!-- Status Timeline -->
@@ -67,12 +67,50 @@ include __DIR__ . '/../includes/header.php';
       'Payment'        => ucfirst($order['payment_status']),
       'Payment Method' => ucwords(str_replace('_', ' ', $order['payment_method'] ?? 'N/A')),
       'Date Ordered'   => date('M d, Y', strtotime($order['ordered_at'])),
+      'Expected Delivery' => !empty($order['expected_delivery_date']) 
+        ? date('M d, Y', strtotime($order['expected_delivery_date'])) 
+        : '—',
     ]; foreach ($info as $label => $val): ?>
       <div style="background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.07);">
         <div style="font-size:11px;color:#718096;font-weight:600;text-transform:uppercase;margin-bottom:5px;"><?= h($label) ?></div>
         <div style="font-size:14px;font-weight:700;color:#1a202c;"><?= h($val) ?></div>
       </div>
     <?php endforeach; ?>
+  </div>
+
+  <!-- Delivery Details -->
+  <div class="admin-card" style="margin-bottom:20px;">
+    <div class="admin-card-header"><h3>Delivery Information</h3></div>
+    <div class="admin-card-body" style="display:grid;gap:12px;">
+      <div>
+        <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Rider</div>
+        <div style="font-size:14px;font-weight:700;color:#1a202c;">
+          <?= h(trim(($order['rider_first_name'] ?? '') . ' ' . ($order['rider_last_name'] ?? ''))) ?: 'Not assigned' ?>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Delivery Status</div>
+        <div style="font-size:14px;font-weight:700;color:#1a202c;">
+          <?= h(ucfirst(str_replace('_', ' ', $order['delivery_status'] ?? 'Not available'))) ?>
+        </div>
+      </div>
+      <?php if (!empty($order['delivery_issue_type']) || !empty($order['delivery_note'])): ?>
+        <div>
+          <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Issue / Note</div>
+          <div style="font-size:14px;color:#1a202c;">
+            <?= h($order['delivery_issue_type'] ?? '') ?>
+            <?= !empty($order['delivery_issue_type']) && !empty($order['delivery_note']) ? ' - ' : '' ?>
+            <?= h($order['delivery_note'] ?? '') ?>
+          </div>
+        </div>
+      <?php endif; ?>
+      <?php if (!empty($order['delivery_proof_url'])): ?>
+        <div>
+          <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Proof</div>
+          <div style="font-size:14px;"><a href="<?= h($order['delivery_proof_url']) ?>" target="_blank" style="color:#3182ce;">View proof image</a></div>
+        </div>
+      <?php endif; ?>
+    </div>
   </div>
 
   <!-- Items -->
@@ -108,9 +146,9 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- Cancel button -->
-  <?php if (in_array($order['status'], ['pending','confirmed'])): ?>
-    <form method="POST" action="/rg-trading-php/pages/orders.php"
+  <!-- Cancel button (ONLY PENDING) -->
+  <?php if ($order['status'] === 'pending'): ?>
+    <form method="POST" action="<?= BASE_URL ?>/pages/orders.php"
           onsubmit="return confirm('Cancel this order?')">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">
       <button type="submit" class="btn-sm btn-sm-red" style="font-size:13px;padding:9px 18px;">Cancel Order</button>

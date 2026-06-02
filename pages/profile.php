@@ -73,38 +73,38 @@ include __DIR__ . '/../includes/header.php';
         <h2>Personal Information</h2>
         <form method="POST">
           <input type="hidden" name="action" value="update_profile">
-          <div class="form-row" style="margin-bottom:16px;">
-            <div class="form-group" style="margin:0;">
+          <div class="form-row mb-40">
+            <div class="form-group">
               <label>First Name</label>
               <input type="text" name="first_name" value="<?= h($user['first_name'] ?? '') ?>" required>
             </div>
-            <div class="form-group" style="margin:0;">
+            <div class="form-group">
               <label>Last Name</label>
               <input type="text" name="last_name" value="<?= h($user['last_name'] ?? '') ?>" required>
             </div>
           </div>
           <div class="form-group">
             <label>Email Address</label>
-            <input type="email" value="<?= h($user['email'] ?? '') ?>" disabled style="background:#f7fafc;color:#a0aec0;">
-            <small style="color:#a0aec0;font-size:11px;">Email cannot be changed.</small>
+            <input type="email" value="<?= h($user['email'] ?? '') ?>" disabled class="input-disabled">
+            <small class="small-muted">Email cannot be changed.</small>
           </div>
           <div class="form-group">
             <label>Phone Number</label>
             <input type="text" name="phone" value="<?= h($user['phone'] ?? '') ?>" placeholder="+63 9XX XXX XXXX">
           </div>
-          <div class="form-group" style="margin-bottom:0;">
+          <div class="form-group">
             <label>Account Role</label>
-            <input type="text" value="<?= h(ucfirst($user['role'] ?? '')) ?>" disabled style="background:#f7fafc;color:#a0aec0;">
+            <input type="text" value="<?= h(ucfirst($user['role'] ?? '')) ?>" disabled class="input-disabled">
           </div>
-          <button type="submit" class="btn-primary" style="margin-top:22px;">Save Changes</button>
+          <button type="submit" class="btn-primary mt-22">Save Changes</button>
         </form>
 
       <?php elseif ($tab === 'orders'): ?>
         <h2>My Orders</h2>
         <?php if (empty($orders)): ?>
-          <div class="empty-state" style="padding:40px 0;">
+          <div class="empty-state mb-40">
             <div class="icon">📦</div>
-            <p>No orders yet. <a href="/rg-trading-php/index.php" style="color:#3182ce;">Start shopping</a></p>
+            <p>No orders yet. <a href="<?= BASE_URL ?>/index.php" class="btn-link">Start shopping</a></p>
           </div>
         <?php else: ?>
           <table class="data-table">
@@ -130,7 +130,7 @@ include __DIR__ . '/../includes/header.php';
             </tbody>
           </table>
           <div style="margin-top:14px;">
-            <a href="/rg-trading-php/pages/orders.php" style="color:#3182ce;font-size:13px;">View all orders →</a>
+            <a href="<?= BASE_URL ?>/pages/orders.php" class="btn-link" style="font-size:13px;">View all orders →</a>
           </div>
         <?php endif; ?>
 

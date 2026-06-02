@@ -283,35 +283,7 @@ $page_title = 'Products — Admin — ' . APP_NAME;
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<style>
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:#fff;border-radius:14px;width:min(680px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:10;}
-.modal-header h2{font-size:17px;font-weight:700;color:#1a202c;margin:0;}
-.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#718096;padding:2px 8px;border-radius:6px;}
-.modal-close:hover{background:#f7fafc;}
-.modal-body{padding:22px 24px;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.form-group{display:flex;flex-direction:column;gap:5px;}
-.form-group.full{grid-column:1/-1;}
-.form-group label{font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.03em;}
-.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#1a202c;}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12);}
-.form-group textarea{resize:vertical;min-height:66px;}
-.img-preview{margin-top:6px;max-width:110px;max-height:72px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;display:none;}
-.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:14px 24px;border-top:1px solid #e2e8f0;background:#f9fafb;border-radius:0 0 14px 14px;}
-.mfbtn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;}
-.mfbtn-primary{background:#667eea;color:#fff;}
-.mfbtn-primary:hover{background:#5a67d8;}
-.mfbtn-cancel{background:#e2e8f0;color:#4a5568;}
-.mfbtn-cancel:hover{background:#cbd5e0;}
-.product-img{width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;}
-.img-ph{width:42px;height:42px;background:#edf2f7;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
-.add-btn{display:inline-flex;align-items:center;gap:7px;background:#667eea;color:#fff;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;}
-.add-btn:hover{background:#5a67d8;}
-.action-btns{display:flex;gap:5px;flex-wrap:wrap;}
-</style>
+<!-- admin products CSS moved to assets/css/style.css -->
 
 <div class="admin-layout">
   <div class="admin-sidebar">

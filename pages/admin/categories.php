@@ -171,9 +171,7 @@ include __DIR__ . '/../../includes/header.php';
         <button type="button" class="mfbtn mfbtn-cancel" onclick="closeModal('createModal')">Cancel</button>
         <button type="submit" class="mfbtn mfbtn-primary">Create Category</button>
       </div>
-    </form>
-  </div>
-</div>
+        <!-- admin categories CSS moved to assets/css/style.css -->
 
 <!-- EDIT MODAL -->
 <div class="modal-overlay" id="editModal">

@@ -12,6 +12,22 @@ $users      = $result['body']['data']['users']      ?? [];
 $pagination = $result['body']['data']['pagination'] ?? [];
 $total_pages = ceil(($pagination['total'] ?? 0) / 15);
 
+// Handle create rider
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rider'])) {
+    $create_result = api_request('POST', '/admin/users', [
+        'email'      => trim($_POST['email'] ?? ''),
+        'password'   => trim($_POST['password'] ?? ''),
+        'first_name' => trim($_POST['first_name'] ?? ''),
+        'last_name'  => trim($_POST['last_name'] ?? ''),
+        'phone'      => trim($_POST['phone'] ?? '') ?: null,
+    ], true);
+
+    set_flash($create_result['status'] === 201 ? 'success' : 'error',
+              $create_result['body']['message'] ?? 'Could not create rider.');
+    header('Location: /rg-trading-php/pages/admin/users.php');
+    exit;
+}
+
 // Handle toggle status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
     $toggle_result = api_request('PATCH', '/admin/users/' . $_POST['toggle_user_id'] . '/toggle-status', [], true);
@@ -40,12 +56,28 @@ include __DIR__ . '/../../includes/header.php';
   <div class="admin-main">
     <div class="admin-header">
       <h1>Users</h1>
-      <p>Manage customer and admin accounts</p>
+      <p>Manage customer, admin, and rider accounts</p>
+    </div>
+
+    <!-- Create Rider -->
+    <div class="admin-card" style="margin-bottom:20px;">
+      <div class="admin-card-header"><h3>Create Rider Account</h3></div>
+      <div class="admin-card-body" style="padding:20px;">
+        <form method="POST" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+          <input type="hidden" name="create_rider" value="1">
+          <input type="text" name="first_name" placeholder="First name" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
+          <input type="text" name="last_name" placeholder="Last name" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
+          <input type="email" name="email" placeholder="Email" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
+          <input type="text" name="phone" placeholder="Phone" style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
+          <input type="password" name="password" placeholder="Password" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
+          <button type="submit" class="btn-sm btn-sm-green" style="width:140px;align-self:end;">Create Rider</button>
+        </form>
+      </div>
     </div>
 
     <!-- Role Filter -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <?php foreach (['' => 'All Users', 'customer' => 'Customers', 'admin' => 'Admins'] as $val => $label): ?>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <?php foreach (['' => 'All Users', 'customer' => 'Customers', 'admin' => 'Admins', 'rider' => 'Riders'] as $val => $label): ?>
         <a href="?role=<?= urlencode($val) ?>"
            style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;
                   background:<?= $role === $val ? '#1a365d' : '#fff' ?>;
@@ -86,7 +118,15 @@ include __DIR__ . '/../../includes/header.php';
                 <td style="font-size:12px;color:#718096;"><?= h($u['email']) ?></td>
                 <td style="font-size:12px;"><?= h($u['phone'] ?? '—') ?></td>
                 <td>
-                  <span class="badge" style="background:<?= $u['role'] === 'admin' ? '#e9d8fd' : '#edf2f7' ?>;color:<?= $u['role'] === 'admin' ? '#553c9a' : '#4a5568' ?>;">
+                  <?php
+                    $roleStyles = [
+                      'admin' => ['bg' => '#e9d8fd', 'color' => '#553c9a'],
+                      'customer' => ['bg' => '#edf2f7', 'color' => '#4a5568'],
+                      'rider' => ['bg' => '#bee3f8', 'color' => '#2b6cb0'],
+                    ];
+                    $style = $roleStyles[$u['role']] ?? ['bg' => '#edf2f7', 'color' => '#4a5568'];
+                  ?>
+                  <span class="badge" style="background:<?= $style['bg'] ?>;color:<?= $style['color'] ?>;">
                     <?= h($u['role']) ?>
                   </span>
                 </td>

@@ -28,9 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             set_flash('success', 'Welcome back, ' . $_SESSION['user']['first_name'] . '!');
 
-            // Redirect admins to dashboard
+            // Redirect admins and riders to their dashboards
             if (is_admin()) {
                 header('Location: /rg-trading-php/pages/admin/dashboard.php');
+            } elseif (is_rider()) {
+                header('Location: /rg-trading-php/pages/rider/orders.php');
             } else {
                 header('Location: /rg-trading-php/index.php');
             }
@@ -49,7 +51,7 @@ $page_title = 'Login — ' . APP_NAME;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= h($page_title) ?></title>
-  <link rel="stylesheet" href="/rg-trading-php/assets/css/style.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
 <body>
 <div class="auth-wrapper">
@@ -58,7 +60,7 @@ $page_title = 'Login — ' . APP_NAME;
     <p>Sign in to your R&amp;G Trading account</p>
 
     <?php if ($error): ?>
-      <div class="flash flash-error" style="border-radius:8px; margin-bottom:16px;">
+      <div class="flash flash-error flash-inline">
         <?= h($error) ?>
       </div>
     <?php endif; ?>
@@ -77,10 +79,10 @@ $page_title = 'Login — ' . APP_NAME;
     </form>
 
     <div class="auth-footer">
-      Don't have an account? <a href="/rg-trading-php/register.php">Register here</a>
+      Don't have an account? <a href="<?= BASE_URL ?>/register.php">Register here</a>
     </div>
   </div>
 </div>
-<script src="/rg-trading-php/assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
 </body>
 </html>

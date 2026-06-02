@@ -49,6 +49,10 @@ function is_admin(): bool {
     return is_logged_in() && in_array($_SESSION['user']['role'] ?? '', ['admin', 'superadmin']);
 }
 
+function is_rider(): bool {
+    return is_logged_in() && ($_SESSION['user']['role'] ?? '') === 'rider';
+}
+
 function require_login(): void {
     if (!is_logged_in()) {
         header('Location: /rg-trading-php/login.php');
@@ -58,6 +62,13 @@ function require_login(): void {
 
 function require_admin(): void {
     if (!is_admin()) {
+        header('Location: /rg-trading-php/index.php?error=unauthorized');
+        exit;
+    }
+}
+
+function require_rider(): void {
+    if (!is_rider()) {
         header('Location: /rg-trading-php/index.php?error=unauthorized');
         exit;
     }

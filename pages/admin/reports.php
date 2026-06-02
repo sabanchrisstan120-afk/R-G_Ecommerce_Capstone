@@ -22,9 +22,7 @@ $page_title = 'Reports — Admin — ' . APP_NAME;
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<style>
-.chart-wrap{position:relative;height:260px;margin-top:10px;}
-</style>
+<!-- admin reports CSS moved to assets/css/style.css -->
 
 <div class="admin-layout">
   <div class="admin-sidebar">

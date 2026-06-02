@@ -57,7 +57,7 @@ $page_title = 'Register — ' . APP_NAME;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= h($page_title) ?></title>
-  <link rel="stylesheet" href="/rg-trading-php/assets/css/style.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
 <body>
 <div class="auth-wrapper">
@@ -66,7 +66,7 @@ $page_title = 'Register — ' . APP_NAME;
     <p>Join R&amp;G Trading to browse and order aircon units</p>
 
     <?php if ($error): ?>
-      <div class="flash flash-error" style="border-radius:8px; margin-bottom:16px;"><?= h($error) ?></div>
+      <div class="flash flash-error flash-inline"><?= h($error) ?></div>
     <?php endif; ?>
 
     <form method="POST">
@@ -88,22 +88,22 @@ $page_title = 'Register — ' . APP_NAME;
         <?php if (isset($errors['email'])): ?><p class="form-error"><?= h($errors['email']) ?></p><?php endif; ?>
       </div>
       <div class="form-group">
-        <label>Password <span style="color:#a0aec0;font-weight:400">(min 8 characters)</span></label>
+        <label>Password <span class="small-muted">(min 8 characters)</span></label>
         <input type="password" name="password" placeholder="••••••••" required>
         <?php if (isset($errors['password'])): ?><p class="form-error"><?= h($errors['password']) ?></p><?php endif; ?>
       </div>
       <div class="form-group">
-        <label>Phone <span style="color:#a0aec0;font-weight:400">(optional)</span></label>
+        <label>Phone <span class="small-muted">(optional)</span></label>
         <input type="text" name="phone" placeholder="09XXXXXXXXX" value="<?= h($_POST['phone'] ?? '') ?>">
       </div>
       <button type="submit" class="btn-primary">Create Account</button>
     </form>
 
     <div class="auth-footer">
-      Already have an account? <a href="/rg-trading-php/login.php">Sign in</a>
+      Already have an account? <a href="<?= BASE_URL ?>/login.php">Sign in</a>
     </div>
   </div>
 </div>
-<script src="/rg-trading-php/assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
 </body>
 </html>

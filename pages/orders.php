@@ -129,7 +129,7 @@ include __DIR__ . '/../includes/header.php';
 <?php if (empty($orders)): ?>
   <div class="empty-state">
     <div class="icon">📦</div>
-    <p>No orders found. <a href="/rg-trading-php/index.php" style="color:#3182ce;">Browse products</a></p>
+    <p>No orders found. <a href="<?= BASE_URL ?>/index.php" style="color:#3182ce;">Browse products</a></p>
   </div>
 <?php else: ?>
   <div class="orders-table">
@@ -174,12 +174,12 @@ include __DIR__ . '/../includes/header.php';
            <td style="display:flex;gap:6px;align-items:center;">
 
   <!-- VIEW -->
-  <a href="/rg-trading-php/pages/order-detail.php?id=<?= h($order['id']) ?>">
+  <a href="<?= BASE_URL ?>/pages/order-detail.php?id=<?= h($order['id']) ?>">
     <button class="btn-sm btn-sm-blue">View</button>
   </a>
 
-  <!-- CANCEL -->
-  <?php if (in_array(strtolower($order['status'] ?? ''), ['pending', 'confirmed'])): ?>
+  <!-- CANCEL (ONLY PENDING) -->
+  <?php if (strtolower($order['status'] ?? '') === 'pending'): ?>
     <form method="POST" style="display:inline;" onsubmit="return confirm('Cancel this order?')">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">
       <button type="submit" class="btn-sm btn-sm-red">Cancel</button>
