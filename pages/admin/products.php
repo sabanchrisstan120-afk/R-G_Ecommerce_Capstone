@@ -286,28 +286,19 @@ include __DIR__ . '/../../includes/header.php';
 <!-- admin products CSS moved to assets/css/style.css -->
 
 <div class="admin-layout">
-  <div class="admin-sidebar">
-    <div class="sidebar-title">Admin Panel</div>
-    <a href="/rg-trading-php/pages/admin/dashboard.php"><span class="icon">📊</span> Dashboard</a>
-    <a href="/rg-trading-php/pages/admin/products.php" class="active"><span class="icon">❄️</span> Products</a>
-    <a href="/rg-trading-php/pages/admin/orders.php"><span class="icon">📦</span> Orders</a>
-    <a href="/rg-trading-php/pages/admin/users.php"><span class="icon">👥</span> Users</a>
-    <a href="/rg-trading-php/pages/admin/categories.php"><span class="icon">🏷️</span> Categories</a>
-    <a href="/rg-trading-php/pages/admin/reports.php"><span class="icon">📈</span> Reports</a>
-    <a href="/rg-trading-php/index.php"><span class="icon">🏪</span> View Store</a>
-  </div>
+  <?php include __DIR__ . '/../../includes/admin-sidebar.php'; ?>
 
   <div class="admin-main">
-    <div class="admin-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div class="admin-header display-flex-between-center flex-wrap gap-12">
       <div><h1>Products</h1><p>Add, edit, adjust stock, and deactivate aircon products</p></div>
       <button class="add-btn" onclick="openCreate()">+ Add New Product</button>
     </div>
 
-    <form method="GET" class="search-bar" style="display:flex;gap:8px;margin-bottom:16px;">
-      <input type="text" name="search" placeholder="Search by name, brand, or model..." value="<?= h($search) ?>" style="flex:1;padding:9px 14px;border:1px solid #e2e8f0;border-radius:9px;font-size:13px;">
-      <button type="submit" style="padding:9px 16px;background:#667eea;color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:13px;">Search</button>
+    <form method="GET" class="search-bar display-flex gap-8 mb-16">
+      <input type="text" name="search" placeholder="Search by name, brand, or model..." value="<?= h($search) ?>" class="flex-1 p-10 border-1 rounded-8 text-13">
+      <button type="submit" class="px-16 p-10 bg-blue text-white border-none rounded-8 cursor-pointer text-13">Search</button>
       <?php if ($search): ?>
-        <a href="/rg-trading-php/pages/admin/products.php" style="padding:9px 14px;background:#e2e8f0;border-radius:9px;font-size:13px;color:#4a5568;text-decoration:none;">Clear</a>
+        <a href="/rg-trading-php/pages/admin/products.php" class="px-14 p-10 bg-light rounded-8 text-13 text-muted text-decoration-none">Clear</a>
       <?php endif; ?>
     </form>
 
@@ -315,11 +306,11 @@ include __DIR__ . '/../../includes/header.php';
       <div class="admin-card-header">
         <h3>All Products (<?= $pagination['total'] ?? count($products) ?>)</h3>
       </div>
-      <div class="admin-card-body" style="padding:0;">
+      <div class="admin-card-body card-no-padding">
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width:52px;">Image</th>
+              <th class="w-52">Image</th>
               <th>Product</th>
               <th>Model</th>
               <th>Brand</th>
@@ -343,33 +334,33 @@ include __DIR__ . '/../../includes/header.php';
                   <?php endif; ?>
                 </td>
                 <td>
-                  <div style="font-weight:600;font-size:13px;"><?= h($p['name']) ?></div>
-                  <div style="font-size:11px;color:#a0aec0;"><?= h($p['category'] ?? '') ?></div>
+                  <div class="font-600 text-13"><?= h($p['name']) ?></div>
+                  <div class="text-11 text-muted-light"><?= h($p['category'] ?? '') ?></div>
                 </td>
-                <td style="font-size:12px;color:#718096;"><?= h($p['model_number']) ?></td>
-                <td style="font-size:13px;"><?= h($p['brand']) ?></td>
+                <td class="text-12 text-muted"><?= h($p['model_number']) ?></td>
+                <td class="text-13"><?= h($p['brand']) ?></td>
                 <td>
   <strong><?= format_price($p['price']) ?></strong>
 </td>
 
 <td>
-  <div style="font-size:13px;font-weight:600;color:#f6ad55;">
+  <div class="text-13 font-600 text-orange">
     ⭐ <?= number_format($p['average_rating'] ?? 0, 1) ?>
   </div>
 
-  <div style="font-size:11px;color:#718096;">
+  <div class="text-11 text-muted">
     <?= intval($p['review_count'] ?? 0) ?> reviews
   </div>
 </td>
 
-<td>
-                  <span style="color:<?= ($p['stock_qty'] ?? 0) <= 5 ? '#e53e3e' : '#38a169' ?>;font-weight:700;">
+                <td>
+                  <span class="font-700 <?= (($p['stock_qty'] ?? 0) <= 5) ? 'text-danger' : 'text-success' ?>">
                     <?= intval($p['stock_qty'] ?? 0) ?>
                   </span>
                 </td>
                 <td>
                 <?php $isActive = (bool)($p['is_active'] ?? 1); ?>
-                   <span class="badge" style="background:<?= $isActive ? '#c6f6d5' : '#fed7d7' ?>;color:<?= $isActive ? '#276749' : '#9b2c2c' ?>;">
+                   <span class="badge <?= $isActive ? 'badge-soft-green' : 'badge-soft-red' ?>">
                      <?= $isActive ? 'Active' : 'Inactive' ?>
                       </span>
                 </td>
@@ -381,8 +372,7 @@ include __DIR__ . '/../../includes/header.php';
                           <?= json_encode($categories, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Edit</button>
                       <button
   type="button"
-  class="btn-sm"
-  style="background:#fff7ed;color:#c05621;border:1px solid #fbd38d;"
+  class="btn-sm bg-orange-light text-orange border-1"
   onclick='openReviews(
       <?= json_encode($p["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
       <?= json_encode($p["reviews"] ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) ?>
@@ -396,24 +386,24 @@ include __DIR__ . '/../../includes/header.php';
                             <?= intval($p["stock_qty"] ?? 0) ?>
                                   )'>Stock</button>
 
-                   <?php if ($is_active): ?>
-                      <form method="POST" style="display:inline;">
+                    <?php if ($is_active): ?>
+                      <form method="POST" class="display-inline">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="product_id" value="<?= h($p['id']) ?>">
                         <button type="submit" class="btn-sm btn-sm-red"
-                          onclick="return confirm('Deactivate \'<?= h(addslashes($p['name'])) ?>\'?')">Deactivate</button>
+                          onclick="return confirm('Deactivate \"<?= h(addslashes($p['name'])) ?>\"?')">Deactivate</button>
                       </form>
                     <?php else: ?>
-                      <form method="POST" style="display:inline;">
+                      <form method="POST" class="display-inline">
                         <input type="hidden" name="action" value="restore">
                         <input type="hidden" name="product_id" value="<?= h($p['id']) ?>">
-                        <button type="submit" class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;">Restore</button>
+                        <button type="submit" class="btn-sm bg-blue-light text-blue border-1">Restore</button>
                       </form>
-                      <form method="POST" style="display:inline;">
+                      <form method="POST" class="display-inline">
                         <input type="hidden" name="action" value="permanent_delete">
                         <input type="hidden" name="product_id" value="<?= h($p['id']) ?>">
                         <button type="submit" class="btn-sm btn-sm-red"
-                          onclick="return confirm('PERMANENTLY delete \'<?= h(addslashes($p['name'])) ?>\'? This cannot be undone!')">Delete Forever</button>
+                          onclick="return confirm('PERMANENTLY delete \"<?= h(addslashes($p['name'])) ?>\"? This cannot be undone!')">Delete Forever</button>
                       </form>
                     <?php endif; ?>
                     
@@ -422,7 +412,7 @@ include __DIR__ . '/../../includes/header.php';
               </tr>
             <?php endforeach; ?>
             <?php if (empty($products)): ?>
-              <tr><td colspan="8" style="text-align:center;color:#a0aec0;padding:40px;">No products found.</td></tr>
+              <tr><td colspan="8" class="table-empty">No products found.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>
@@ -512,12 +502,11 @@ include __DIR__ . '/../../includes/header.php';
          multiple
          onchange="previewMultiple(this, 'c_preview_wrap')">
 
-  <small style="color:#718096;font-size:11px;">
+  <small class="muted-small">
     Upload PNG, JPG, JPEG, or WEBP images
   </small>
 
-  <div id="c_preview_wrap"
-       style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;"></div>
+  <div id="c_preview_wrap" class="preview-grid"></div>
 </div>
           <div class="form-group full">
             <label>Description</label>
@@ -603,25 +592,18 @@ include __DIR__ . '/../../includes/header.php';
        multiple
        onchange="previewMultiple(this, 'e_preview_wrap')">
 
-<small style="color:#718096;font-size:11px;">
+<small class="muted-small">
   Upload PNG, JPG, JPEG, or WEBP images
 </small>
 
-<div id="e_preview_wrap"
-     style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;"></div>
 
-<div id="existing_images_wrap"
-     style="display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;"></div>
+<div id="e_preview_wrap" class="preview-grid"></div>
 
+<div id="existing_images_wrap" class="preview-grid mt-15"></div>
 
 
-<button type="button"
-        onclick="deleteSelectedImages()"
-        style="margin-top:10px;padding:8px 14px;border:none;
-               background:#e53e3e;color:#fff;border-radius:8px;
-               cursor:pointer;">
-  Delete Selected Images
-</button>
+
+<button type="button" onclick="deleteSelectedImages()" class="btn-danger">Delete Selected Images</button>
 
 
 </div>
@@ -641,7 +623,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- STOCK MODAL -->
 <div class="modal-overlay" id="stockModal">
-  <div class="modal" style="max-width:400px;">
+  <div class="modal modal-small">
     <div class="modal-header">
       <h2>Adjust Stock</h2>
       <button class="modal-close" onclick="closeModal('stockModal')">&times;</button>
@@ -650,14 +632,14 @@ include __DIR__ . '/../../includes/header.php';
       <input type="hidden" name="action" value="stock">
       <input type="hidden" name="product_id" id="s_id">
       <div class="modal-body">
-        <p style="margin-bottom:14px;color:#4a5568;font-size:13px;">
+        <p class="mb-12 muted-small">
           Product: <strong id="s_name"></strong><br>
-          Current stock: <strong id="s_cur" style="color:#2b6cb0;"></strong>
+          Current stock: <strong id="s_cur" class="text-success"></strong>
         </p>
-        <div class="form-group" style="margin-bottom:12px;">
+        <div class="form-group mb-12">
           <label>Adjustment Amount</label>
           <input type="number" name="adjustment" required placeholder="+10 to add  /  -5 to remove">
-          <small style="color:#718096;font-size:11px;">Positive = add stock &nbsp;|&nbsp; Negative = remove stock</small>
+          <small class="muted-small">Positive = add stock &nbsp;|&nbsp; Negative = remove stock</small>
         </div>
         <div class="form-group">
           <label>Reason</label>
@@ -790,30 +772,12 @@ function renderExistingImages(images){
   images.forEach((img, index) => {
 
     const box = document.createElement('div');
-
-    box.style.position = 'relative';
+    box.className = 'img-box';
 
     box.innerHTML = `
-      <img src="${img}"
-           style="
-             width:90px;
-             height:90px;
-             object-fit:cover;
-             border-radius:8px;
-             border:1px solid #ddd;
-           ">
+      <img src="${img}">
 
-      <input type="checkbox"
-             class="delete-image-checkbox"
-             value="${index}"
-             style="
-               position:absolute;
-               top:5px;
-               right:5px;
-               width:18px;
-               height:18px;
-               cursor:pointer;
-             ">
+      <input type="checkbox" class="delete-image-checkbox img-checkbox" value="${index}">
     `;
 
     wrap.appendChild(box);
@@ -849,34 +813,12 @@ function previewMultiple(input, wrapId){
 
       const box = document.createElement('div');
 
-      box.style.position = 'relative';
+      box.className = 'img-box';
 
       box.innerHTML = `
-        <img src="${e.target.result}"
-             style="
-               width:90px;
-               height:90px;
-               object-fit:cover;
-               border-radius:8px;
-               border:1px solid #ddd;
-             ">
+        <img src="${e.target.result}">
 
-        <button type="button"
-                onclick="removeSelectedImage(${i}, '${wrapId}')"
-                style="
-                  position:absolute;
-                  top:2px;
-                  right:2px;
-                  background:red;
-                  color:white;
-                  border:none;
-                  border-radius:50%;
-                  width:20px;
-                  height:20px;
-                  cursor:pointer;
-                ">
-          ×
-        </button>
+        <button type="button" class="img-remove-btn" onclick="removeSelectedImage(${i}, '${wrapId}')">×</button>
       `;
 
       wrap.appendChild(box);
@@ -913,35 +855,13 @@ function previewMultiple(input, wrapId){
 
       const box = document.createElement('div');
 
-      box.style.position = 'relative';
+        box.className = 'img-box';
 
-      box.innerHTML = `
-        <img src="${e.target.result}"
-             style="
-               width:90px;
-               height:90px;
-               object-fit:cover;
-               border-radius:8px;
-               border:1px solid #ddd;
-             ">
+        box.innerHTML = `
+          <img src="${e.target.result}">
 
-        <button type="button"
-                onclick="removeSelectedImage(${index}, '${wrapId}')"
-                style="
-                  position:absolute;
-                  top:2px;
-                  right:2px;
-                  background:red;
-                  color:white;
-                  border:none;
-                  border-radius:50%;
-                  width:20px;
-                  height:20px;
-                  cursor:pointer;
-                ">
-          ×
-        </button>
-      `;
+          <button type="button" class="img-remove-btn" onclick="removeSelectedImage(${index}, '${wrapId}')">×</button>
+        `;
 
       wrap.appendChild(box);
 
@@ -970,13 +890,7 @@ function previewMultiple(input, wrapId){
   if(!reviews || reviews.length === 0){
 
     container.innerHTML = `
-      <div style="
-        text-align:center;
-        padding:40px;
-        color:#718096;
-      ">
-        No reviews yet.
-      </div>
+      <div class="review-empty">No reviews yet.</div>
     `;
 
   } else {
@@ -993,35 +907,12 @@ function previewMultiple(input, wrapId){
       }
 
       container.innerHTML += `
-        <div style="
-          padding:16px;
-          border-bottom:1px solid #e2e8f0;
-        ">
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            margin-bottom:6px;
-          ">
-
-            <strong>
-              ${r.first_name || ''} ${r.last_name || ''}
-            </strong>
-
-            <span style="color:#f6ad55;">
-              ${stars}
-            </span>
-
+        <div class="review-item">
+          <div class="review-row">
+            <strong>${r.first_name || ''} ${r.last_name || ''}</strong>
+            <span class="review-stars">${stars}</span>
           </div>
-
-          <div style="
-            color:#4a5568;
-            font-size:13px;
-            line-height:1.5;
-          ">
-            ${r.comment || ''}
-          </div>
-
+          <div class="review-body">${r.comment || ''}</div>
         </div>
       `;
     });
@@ -1034,8 +925,8 @@ function previewMultiple(input, wrapId){
 
 
 <!-- REVIEWS MODAL -->
-<div class="modal-overlay" id="reviewsModal" style="z-index:9999;">
-  <div class="modal" style="max-width:650px;">
+<div class="modal-overlay" id="reviewsModal">
+  <div class="modal modal-small">
 
     <div class="modal-header">
       <h2 id="reviewProductTitle">Product Reviews</h2>

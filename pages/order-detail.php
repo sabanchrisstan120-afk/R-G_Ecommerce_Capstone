@@ -30,16 +30,17 @@ $page_title = 'Order ' . $order['order_number'] . ' — ' . APP_NAME;
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="main-content" style="max-width:780px;">
-  <div class="page-header">
+<div class="main-content max-w-800">
+  <div class="page-header mb-24">
+    <a href="<?= BASE_URL ?>/pages/orders.php" class="btn-back">← Back to Orders</a>
     <h1>Order #<?= h($order['order_number']) ?></h1>
-    <p><a href="<?= BASE_URL ?>/pages/orders.php" style="color:#3182ce;">← Back to My Orders</a></p>
+    <p class="text-muted">View and manage your order details below</p>
   </div>
 
   <!-- Status Timeline -->
   <?php if (!$is_cancelled): ?>
-  <div class="admin-card" style="margin-bottom:20px;">
-    <div class="admin-card-body">
+  <div class="admin-card mb-24">
+    <div class="admin-card-body p-22">
       <div class="status-timeline">
         <?php
         $icons = ['pending'=>'🕐','confirmed'=>'✅','processing'=>'⚙️','shipped'=>'🚚','delivered'=>'🏠'];
@@ -55,13 +56,13 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
   <?php else: ?>
-  <div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#9b2c2c;font-weight:600;">
-    ✕ This order was cancelled.
+  <div class="alert-cancelled">
+    <span class="text-large">✕</span> This order was cancelled.
   </div>
   <?php endif; ?>
 
   <!-- Summary Row -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;">
+  <div class="grid-auto-200 mb-26">
     <?php $info = [
       'Order Status'   => ucfirst($order['status']),
       'Payment'        => ucfirst($order['payment_status']),
@@ -71,33 +72,33 @@ include __DIR__ . '/../includes/header.php';
         ? date('M d, Y', strtotime($order['expected_delivery_date'])) 
         : '—',
     ]; foreach ($info as $label => $val): ?>
-      <div style="background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.07);">
-        <div style="font-size:11px;color:#718096;font-weight:600;text-transform:uppercase;margin-bottom:5px;"><?= h($label) ?></div>
-        <div style="font-size:14px;font-weight:700;color:#1a202c;"><?= h($val) ?></div>
+      <div class="info-card">
+        <div class="info-card-label"><?= h($label) ?></div>
+        <div class="info-card-value"><?= h($val) ?></div>
       </div>
     <?php endforeach; ?>
   </div>
 
   <!-- Delivery Details -->
-  <div class="admin-card" style="margin-bottom:20px;">
+  <div class="admin-card mb-24">
     <div class="admin-card-header"><h3>Delivery Information</h3></div>
-    <div class="admin-card-body" style="display:grid;gap:12px;">
+    <div class="admin-card-body grid-gap-14">
       <div>
-        <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Rider</div>
-        <div style="font-size:14px;font-weight:700;color:#1a202c;">
+        <div class="info-card-label">Rider</div>
+        <div class="info-card-value">
           <?= h(trim(($order['rider_first_name'] ?? '') . ' ' . ($order['rider_last_name'] ?? ''))) ?: 'Not assigned' ?>
         </div>
       </div>
       <div>
-        <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Delivery Status</div>
-        <div style="font-size:14px;font-weight:700;color:#1a202c;">
+        <div class="info-card-label">Delivery Status</div>
+        <div class="info-card-value">
           <?= h(ucfirst(str_replace('_', ' ', $order['delivery_status'] ?? 'Not available'))) ?>
         </div>
       </div>
       <?php if (!empty($order['delivery_issue_type']) || !empty($order['delivery_note'])): ?>
         <div>
-          <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Issue / Note</div>
-          <div style="font-size:14px;color:#1a202c;">
+          <div class="info-card-label">Issue / Note</div>
+          <div class="info-card-value text-95">
             <?= h($order['delivery_issue_type'] ?? '') ?>
             <?= !empty($order['delivery_issue_type']) && !empty($order['delivery_note']) ? ' - ' : '' ?>
             <?= h($order['delivery_note'] ?? '') ?>
@@ -106,52 +107,54 @@ include __DIR__ . '/../includes/header.php';
       <?php endif; ?>
       <?php if (!empty($order['delivery_proof_url'])): ?>
         <div>
-          <div style="font-size:11px;color:#718096;text-transform:uppercase;margin-bottom:5px;">Proof</div>
-          <div style="font-size:14px;"><a href="<?= BASE_URL ?>/pages/proof.php?path=<?= urlencode($order['delivery_proof_url']) ?>" target="_blank" style="color:#3182ce;">View proof image</a></div>
+          <div class="info-card-label">Proof</div>
+          <div><a href="<?= BASE_URL ?>/pages/proof.php?path=<?= urlencode($order['delivery_proof_url']) ?>" target="_blank" class="btn-back">🔍 View proof image</a></div>
         </div>
       <?php endif; ?>
     </div>
   </div>
 
   <!-- Items -->
-  <div class="admin-card" style="margin-bottom:20px;">
+  <div class="admin-card mb-24">
     <div class="admin-card-header"><h3>Items Ordered</h3></div>
-    <table class="data-table">
+    <table class="data-table table-no-margin">
       <thead>
         <tr>
           <th>Product</th>
-          <th style="text-align:center;">Qty</th>
-          <th style="text-align:right;">Unit Price</th>
-          <th style="text-align:right;">Total</th>
+          <th class="text-center">Qty</th>
+          <th class="text-right">Unit Price</th>
+          <th class="text-right">Total</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($order['items'] ?? [] as $item): ?>
           <tr>
             <td>
-              <div style="font-weight:600;"><?= h($item['product_name']) ?></div>
-              <div style="font-size:11px;color:#a0aec0;">Model: <?= h($item['model_number']) ?></div>
+              <div class="font-strong text-strong"><?= h($item['product_name']) ?></div>
+              <div class="text-muted text-small">Model: <?= h($item['model_number']) ?></div>
             </td>
-            <td style="text-align:center;"><?= $item['quantity'] ?></td>
-            <td style="text-align:right;"><?= format_price($item['unit_price']) ?></td>
-            <td style="text-align:right;font-weight:700;"><?= format_price($item['total_price']) ?></td>
+            <td class="text-center"><?= $item['quantity'] ?></td>
+            <td class="text-right"><?= format_price($item['unit_price']) ?></td>
+            <td class="text-right font-strong"><?= format_price($item['total_price']) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
     </table>
-    <div style="padding:16px 20px;border-top:1px solid #edf2f7;background:#f7fafc;">
-      <div class="summary-row"><span>Subtotal</span><span><?= format_price($order['subtotal']) ?></span></div>
-      <div class="summary-row"><span>Shipping</span><span><?= $order['shipping_fee'] > 0 ? format_price($order['shipping_fee']) : 'FREE' ?></span></div>
-      <div class="summary-row total"><span>Total Amount</span><span><?= format_price($order['total_amount']) ?></span></div>
+    <div class="order-summary-panel">
+      <div class="order-summary-row"><span>Subtotal</span><span><?= format_price($order['subtotal']) ?></span></div>
+      <div class="order-summary-row"><span>Shipping</span><span><?= $order['shipping_fee'] > 0 ? format_price($order['shipping_fee']) : 'FREE' ?></span></div>
+      <div class="order-summary-row total"><span>Total Amount</span><span><?= format_price($order['total_amount']) ?></span></div>
     </div>
   </div>
 
   <!-- Cancel button (ONLY PENDING) -->
   <?php if ($order['status'] === 'pending'): ?>
     <form method="POST" action="<?= BASE_URL ?>/pages/orders.php"
-          onsubmit="return confirm('Cancel this order?')">
+          onsubmit="return confirm('Cancel this order?');">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">
-      <button type="submit" class="btn-sm btn-sm-red" style="font-size:13px;padding:9px 18px;">Cancel Order</button>
+      <button type="submit" class="btn-danger-outline">
+        ✕ Cancel Order
+      </button>
     </form>
   <?php endif; ?>
 

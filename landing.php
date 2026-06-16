@@ -4,9 +4,6 @@ require_once __DIR__ . '/includes/config.php';
 // API base for server-side requests only
 $api_base = 'http://localhost:3000/api';
 
-// Frontend base URL — adjust if your PHP app runs on a different port/path
-$base = '';  // e.g. 'http://localhost:8080' or leave empty for relative URLs
-
 $cat_result = api_request('GET', '/products/categories');
 $categories = $cat_result['body']['data']['categories'] ?? [];
 
@@ -22,8 +19,8 @@ include __DIR__ . '/includes/header.php';
 <section class="lp-hero" aria-labelledby="lp-hero-title">
   <div class="lp-hero-inner">
     <p class="lp-eyebrow">Iloilo &amp; Western Visayas</p>
-    <h1 id="lp-hero-title">Premium air conditioning for homes and businesses</h1>
-    <p class="lp-lead">R&amp;G Trading supplies trusted brands, efficient cooling, and straightforward ordering—so you stay comfortable year-round.</p>
+    <h1 id="lp-hero-title">Premium air conditioning systems for homes and businesses</h1>
+    <p class="lp-lead">R&amp;G Trading delivers reliable cooling, transparent pricing, and easy ordering so your space stays comfortable every day.</p>
     <div class="lp-hero-actions">
       <a href="<?= BASE_URL ?>/" class="lp-btn lp-btn-primary">Browse products</a>
      
@@ -79,7 +76,7 @@ include __DIR__ . '/includes/header.php';
     <p class="lp-section-sub">Jump straight into the range that fits your space.</p>
     <div class="lp-cat-grid">
       <?php foreach (array_slice($categories, 0, 6) as $cat): ?>
-        <a class="lp-cat-card" href="<?= h($base) ?>/index.php?<?= h(http_build_query(['category' => $cat['slug']])) ?>">
+        <a class="lp-cat-card" href="<?= BASE_URL ?>/index.php?<?= h(http_build_query(['category' => $cat['slug']])) ?>">
           <span class="lp-cat-name"><?= h($cat['name']) ?></span>
           <?php if (isset($cat['product_count'])): ?>
             <span class="lp-cat-meta"><?= (int) $cat['product_count'] ?> products</span>
@@ -87,7 +84,7 @@ include __DIR__ . '/includes/header.php';
         </a>
       <?php endforeach; ?>
     </div>
-    <p class="lp-cat-more"><a href="<?= h($base) ?>/index.php">View full catalog →</a></p>
+    <p class="lp-cat-more"><a href="<?= BASE_URL ?>/index.php">View full catalog →</a></p>
   </div>
 </section>
 <?php endif; ?>

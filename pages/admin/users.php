@@ -42,16 +42,7 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="admin-layout">
-  <div class="admin-sidebar">
-    <div class="sidebar-title">Admin Panel</div>
-    <a href="/rg-trading-php/pages/admin/dashboard.php"><span class="icon">📊</span> Dashboard</a>
-    <a href="/rg-trading-php/pages/admin/products.php"><span class="icon">❄️</span> Products</a>
-    <a href="/rg-trading-php/pages/admin/orders.php"><span class="icon">📦</span> Orders</a>
-    <a href="/rg-trading-php/pages/admin/users.php" class="active"><span class="icon">👥</span> Users</a>
-    <a href="/rg-trading-php/pages/admin/categories.php"><span class="icon">🏷️</span> Categories</a>
-    <a href="/rg-trading-php/pages/admin/reports.php"><span class="icon">📈</span> Reports</a>
-    <a href="/rg-trading-php/index.php"><span class="icon">🏪</span> View Store</a>
-  </div>
+  <?php include __DIR__ . '/../../includes/admin-sidebar.php'; ?>
 
   <div class="admin-main">
     <div class="admin-header">
@@ -60,35 +51,31 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- Create Rider -->
-    <div class="admin-card" style="margin-bottom:20px;">
+    <div class="admin-card mb-20">
       <div class="admin-card-header"><h3>Create Rider Account</h3></div>
-      <div class="admin-card-body" style="padding:20px;">
-        <form method="POST" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+      <div class="admin-card-body card-padding">
+        <form method="POST" class="form-grid">
           <input type="hidden" name="create_rider" value="1">
-          <input type="text" name="first_name" placeholder="First name" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
-          <input type="text" name="last_name" placeholder="Last name" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
-          <input type="email" name="email" placeholder="Email" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
-          <input type="text" name="phone" placeholder="Phone" style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
-          <input type="password" name="password" placeholder="Password" required style="padding:10px;border:1px solid #e2e8f0;border-radius:8px;">
-          <button type="submit" class="btn-sm btn-sm-green" style="width:140px;align-self:end;">Create Rider</button>
+          <input type="text" name="first_name" placeholder="First name" required class="form-input">
+          <input type="text" name="last_name" placeholder="Last name" required class="form-input">
+          <input type="email" name="email" placeholder="Email" required class="form-input">
+          <input type="text" name="phone" placeholder="Phone" class="form-input">
+          <input type="password" name="password" placeholder="Password" required class="form-input">
+          <button type="submit" class="btn-sm btn-sm-green btn-create">Create Rider</button>
         </form>
       </div>
     </div>
 
     <!-- Role Filter -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <div class="filters-wrap">
       <?php foreach (['' => 'All Users', 'customer' => 'Customers', 'admin' => 'Admins', 'rider' => 'Riders'] as $val => $label): ?>
-        <a href="?role=<?= urlencode($val) ?>"
-           style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;
-                  background:<?= $role === $val ? '#1a365d' : '#fff' ?>;
-                  color:<?= $role === $val ? '#fff' : '#4a5568' ?>;
-                  border:1px solid <?= $role === $val ? '#1a365d' : '#e2e8f0' ?>;">
+        <a href="?role=<?= urlencode($val) ?>" class="pill <?= $role === $val ? 'active' : '' ?>">
           <?= $label ?>
         </a>
       <?php endforeach; ?>
     </div>
 
-    <form method="GET" class="search-bar" style="margin-bottom:20px;">
+    <form method="GET" class="search-bar mb-20">
       <input type="hidden" name="role" value="<?= h($role) ?>">
       <input type="text" name="search" placeholder="Search by name or email..." value="<?= h($search) ?>">
       <button type="submit">Search</button>
@@ -98,7 +85,7 @@ include __DIR__ . '/../../includes/header.php';
       <div class="admin-card-header">
         <h3>Users (<?= $pagination['total'] ?? 0 ?>)</h3>
       </div>
-      <div class="admin-card-body" style="padding:0;">
+      <div class="admin-card-body card-no-padding">
         <table class="data-table">
           <thead>
             <tr>
@@ -115,26 +102,24 @@ include __DIR__ . '/../../includes/header.php';
             <?php foreach ($users as $u): ?>
               <tr>
                 <td><strong><?= h($u['first_name'] . ' ' . $u['last_name']) ?></strong></td>
-                <td style="font-size:12px;color:#718096;"><?= h($u['email']) ?></td>
-                <td style="font-size:12px;"><?= h($u['phone'] ?? '—') ?></td>
+                <td class="muted-small"><?= h($u['email']) ?></td>
+                <td class="text-small"><?= h($u['phone'] ?? '—') ?></td>
                 <td>
                   <?php
-                    $roleStyles = [
-                      'admin' => ['bg' => '#e9d8fd', 'color' => '#553c9a'],
-                      'customer' => ['bg' => '#edf2f7', 'color' => '#4a5568'],
-                      'rider' => ['bg' => '#bee3f8', 'color' => '#2b6cb0'],
+                    $roleClassMap = [
+                      'admin' => 'badge-processing',
+                      'customer' => 'badge-soft-blue',
+                      'rider' => 'badge-soft-blue',
                     ];
-                    $style = $roleStyles[$u['role']] ?? ['bg' => '#edf2f7', 'color' => '#4a5568'];
+                    $roleClass = $roleClassMap[$u['role']] ?? '';
                   ?>
-                  <span class="badge" style="background:<?= $style['bg'] ?>;color:<?= $style['color'] ?>;">
-                    <?= h($u['role']) ?>
-                  </span>
+                  <span class="badge <?= $roleClass ?>"><?= h($u['role']) ?></span>
                 </td>
-                <td style="font-size:12px;color:#718096;">
+                <td class="muted-small">
                   <?= $u['last_login_at'] ? date('M d, Y', strtotime($u['last_login_at'])) : 'Never' ?>
                 </td>
                 <td>
-                  <span class="badge" style="background:<?= $u['is_active'] ? '#c6f6d5' : '#fed7d7' ?>;color:<?= $u['is_active'] ? '#276749' : '#9b2c2c' ?>;">
+                  <span class="badge <?= $u['is_active'] ? 'badge-soft-green' : 'badge-soft-red' ?>">
                     <?= $u['is_active'] ? 'Active' : 'Inactive' ?>
                   </span>
                 </td>
@@ -149,13 +134,13 @@ include __DIR__ . '/../../includes/header.php';
                       </button>
                     </form>
                   <?php else: ?>
-                    <span style="font-size:11px;color:#a0aec0;">You</span>
+                    <span class="table-cell-muted">You</span>
                   <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>
             <?php if (empty($users)): ?>
-              <tr><td colspan="7" style="text-align:center;color:#a0aec0;padding:30px;">No users found</td></tr>
+              <tr><td colspan="7" class="table-empty">No users found</td></tr>
             <?php endif; ?>
           </tbody>
         </table>

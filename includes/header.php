@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title><?= h($page_title ?? APP_NAME) ?></title>
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
@@ -10,16 +10,21 @@
 
 <nav class="navbar">
   <div class="nav-container">
-    <a href="<?= BASE_URL ?>/landing.php" class="nav-brand">
-      <span class="brand-rg">R&amp;G</span> Trading ❄️
-    </a>
-    
+    <div class="nav-brand-wrap">
+      <a href="<?= BASE_URL ?>/landing.php" class="nav-brand">
+        <span class="brand-rg">R&amp;G</span> Trading ❄️
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation menu">☰</button>
+    </div>
+
     <div class="nav-links">
       <a href="<?= BASE_URL ?>/index.php">Products</a>
 
       <?php if (!is_rider()): ?>
-        <a href="<?= BASE_URL ?>/pages/cart.php" class="cart-icon">
-          🛒
+        <a href="<?= BASE_URL ?>/pages/cart.php" class="cart-icon" aria-label="View cart">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+            <path d="M7 4H5a1 1 0 0 0-1 1l1.5 9A2 2 0 0 0 7.5 16h9a2 2 0 0 0 2-1.71L20.42 7H8.21L7 4zm1.5 10a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm9 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+          </svg>
           <span id="cart-count">
             <?= count($_SESSION['cart'] ?? []) ?>
           </span>

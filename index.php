@@ -28,18 +28,25 @@ include __DIR__ . '/includes/header.php';
 <?php if (!$search && !$category): ?>
 <div class="hero">
   <div class="hero-inner">
-    <h1>Stay Cool with R&G Trading</h1>
-    <p>Premium air conditioner units for every home and business in Iloilo</p>
-    <div class="hero-search">
-      <form method="GET" class="form-contents">
-        <input type="text" name="search" placeholder="Search by brand, model, or type..." value="<?= h($search) ?>" class="search-input">
-        <button type="submit">Search</button>
-      </form>
-    </div>
-    <div class="hero-stats">
-      <div class="hero-stat"><strong><?= count($categories) ?>+</strong><span>Categories</span></div>
-      <div class="hero-stat"><strong><?= $total ?>+</strong><span>Products</span></div>
-      <div class="hero-stat"><strong>Free</strong><span>Shipping ₱10k+</span></div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1>Stay Cool with R&G Trading</h1>
+        <p>Premium air conditioner units for every home and business in Iloilo</p>
+        <div class="hero-search">
+          <form method="GET" class="form-contents">
+            <input type="text" name="search" placeholder="Search by brand, model, or type..." value="<?= h($search) ?>" class="search-input">
+            <button type="submit">Search</button>
+          </form>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><strong><?= count($categories) ?>+</strong><span>Categories</span></div>
+          <div class="hero-stat"><strong><?= $total ?>+</strong><span>Products</span></div>
+          <div class="hero-stat"><strong>Free</strong><span>Shipping ₱10k+</span></div>
+        </div>
+      </div>
+      <div class="hero-image-frame">
+        <div class="hero-image-placeholder"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -47,11 +54,11 @@ include __DIR__ . '/includes/header.php';
 
 <div class="main-content">
 
-  <?php if (!$search && !$category): ?>
+  <?php if (!$search): ?>
   <div class="category-pills">
-    <a href="/rg-trading-php/" class="cat-pill active">All</a>
+    <a href="/rg-trading-php/" class="cat-pill <?= $category === '' ? 'active' : '' ?>">All</a>
     <?php foreach ($categories as $cat): ?>
-      <a href="?category=<?= h($cat['slug']) ?>" class="cat-pill"><?= h($cat['name']) ?></a>
+      <a href="?category=<?= h($cat['slug']) ?>" class="cat-pill <?= $category === $cat['slug'] ? 'active' : '' ?>"><?= h($cat['name']) ?></a>
     <?php endforeach; ?>
   </div>
   <?php endif; ?>

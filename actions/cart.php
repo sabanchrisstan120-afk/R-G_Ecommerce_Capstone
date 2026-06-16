@@ -177,7 +177,7 @@ include __DIR__ . '/../includes/header.php';
       <!-- Order Summary -->
       <div class="summary-card">
         <div class="summary-row"><span class="muted-meta">Subtotal</span><span id="subtotal"><?= format_price($product['price']) ?></span></div>
-        <div class="summary-row"><span class="muted-meta">Shipping</span><span style="color:#38a169;"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
+        <div class="summary-row"><span class="muted-meta">Shipping</span><span class="text-success"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
         <div class="summary-row total"><span>Total</span><span id="total"><?= format_price($product['price'] >= 10000 ? $product['price'] : $product['price'] + 500) ?></span></div>
       </div>
 

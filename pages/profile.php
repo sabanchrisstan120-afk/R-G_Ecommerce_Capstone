@@ -129,8 +129,8 @@ include __DIR__ . '/../includes/header.php';
               <?php endforeach; ?>
             </tbody>
           </table>
-          <div style="margin-top:14px;">
-            <a href="<?= BASE_URL ?>/pages/orders.php" class="btn-link" style="font-size:13px;">View all orders →</a>
+          <div class="mt-15">
+            <a href="<?= BASE_URL ?>/pages/orders.php" class="btn-link text-small">View all orders →</a>
           </div>
         <?php endif; ?>
 

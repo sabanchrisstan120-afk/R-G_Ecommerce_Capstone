@@ -276,7 +276,7 @@ $reviews = $review_res['body']['reviews'] ?? [];
     <input type="hidden" name="image" value="<?= h($images[0] ?? '') ?>">
     <input type="hidden" name="product_id" value="<?= h($product['id']) ?>">
 
-<input type="number" name="qty" value="1" min="1" max="<?= (int)$product['stock_qty'] ?>">
+    <input type="number" name="qty" value="1" min="1" max="<?= (int)$product['stock_qty'] ?>" class="qty-input">
 
     <button type="submit" name="add_to_cart" class="btn-order secondary btn-full">
       Add to Cart
@@ -315,7 +315,7 @@ if (is_logged_in()) {
 <?php if ($can_review): ?>
 
 <div class="card-panel">
-  <h3 style="margin-bottom:18px;">Write a Review</h3>
+  <h3 class="mb-18">Write a Review</h3>
 
   <form method="POST">
     <input type="hidden" name="submit_review" value="1">
@@ -489,7 +489,7 @@ document.querySelector('form').addEventListener('submit', function () {
         $rec_img = $rec_images[0] ?? null;
         $rec_qty = (int)($rec['stock_qty'] ?? 0);
       ?>
-      <a href="<?= BASE_URL ?>/pages/product-detail.php?id=<?= h($rec['id']) ?>" style="text-decoration:none;color:inherit;">
+      <a href="<?= BASE_URL ?>/pages/product-detail.php?id=<?= h($rec['id']) ?>" class="link-reset">
         <div class="rec-item">
 
           <!-- Image -->
@@ -499,7 +499,7 @@ document.querySelector('form').addEventListener('submit', function () {
                    alt="<?= h($rec['name']) ?>"
                    class="rec-img-thumb">
               <?php else: ?>
-              <span style="font-size:40px;color:#ccc;">❄️</span>
+              <span class="icon-xxl text-muted-light">❄️</span>
             <?php endif; ?>
           </div>
 

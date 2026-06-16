@@ -46,7 +46,6 @@ $total = 0;
   <?php if (empty($cart)): ?>
     <div class="card-center">Your cart is empty. <a href="<?= BASE_URL ?>/index.php" class="btn-link">Browse products</a></div>
   <?php else: ?>
-    <form method="POST">
       <table class="table-card">
         <thead class="thead-muted">
           <tr>
@@ -64,16 +63,16 @@ $total = 0;
           ?>
           <tr>
             <td class="cell-pad">
-              <div style="display:flex;gap:12px;align-items:center;">
+              <div class="d-flex items-center gap-12">
                 <img src="<?= h($item['image'] ?: BASE_URL.'/assets/img/placeholder.png') ?>" alt="" class="product-thumb">
                 <div>
-                  <div style="font-weight:700;color:#1a202c;"><?= h($item['name']) ?></div>
+                  <div class="font-strong text-strong"><?= h($item['name']) ?></div>
                 </div>
               </div>
             </td>
             <td class="cell-pad"><?= format_price($item['price']) ?></td>
             <td class="cell-pad">
-              <input type="number" name="qty[<?= h($pid) ?>]" value="<?= h($item['qty']) ?>" min="0" class="input-qty">
+              <span class="qty-display"><?= h($item['qty']) ?></span>
             </td>
             <td class="cell-pad"><?= format_price($subtotal) ?></td>
             <td class="cell-pad">
@@ -85,16 +84,13 @@ $total = 0;
         </tbody>
       </table>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-        <div>
-          <button type="submit" class="btn-primary">Update Cart</button>
-        </div>
-        <div style="text-align:right;">
-          <div style="color:#718096;margin-bottom:6px;">Total</div>
-          <div style="font-weight:700;font-size:18px;"><?= format_price($total) ?></div>
+      <div class="d-flex justify-between items-center mt-16">
+        <div></div>
+        <div class="text-right">
+          <div class="text-muted mb-6">Total</div>
+          <div class="font-strong text-large"><?= format_price($total) ?></div>
         </div>
       </div>
-    </form>
   <?php endif; ?>
 </div>
 

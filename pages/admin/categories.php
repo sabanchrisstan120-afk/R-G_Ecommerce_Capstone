@@ -43,47 +43,11 @@ $page_title = 'Categories — Admin — ' . APP_NAME;
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<style>
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:#fff;border-radius:14px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:10;}
-.modal-header h2{font-size:17px;font-weight:700;color:#1a202c;margin:0;}
-.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#718096;padding:2px 8px;border-radius:6px;}
-.modal-close:hover{background:#f7fafc;}
-.modal-body{padding:22px 24px;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.form-group{display:flex;flex-direction:column;gap:5px;}
-.form-group.full{grid-column:1/-1;}
-.form-group label{font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.03em;}
-.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#1a202c;}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12);}
-.form-group textarea{resize:vertical;min-height:66px;}
-.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:14px 24px;border-top:1px solid #e2e8f0;background:#f9fafb;border-radius:0 0 14px 14px;}
-.mfbtn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;}
-.mfbtn-primary{background:#667eea;color:#fff;}
-.mfbtn-primary:hover{background:#5a67d8;}
-.mfbtn-cancel{background:#e2e8f0;color:#4a5568;}
-.mfbtn-cancel:hover{background:#cbd5e0;}
-.add-btn{display:inline-flex;align-items:center;gap:7px;background:#667eea;color:#fff;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;}
-.add-btn:hover{background:#5a67d8;}
-.action-btns{display:flex;gap:5px;}
-</style>
-
 <div class="admin-layout">
-  <div class="admin-sidebar">
-    <div class="sidebar-title">Admin Panel</div>
-    <a href="/rg-trading-php/pages/admin/dashboard.php"><span class="icon">📊</span> Dashboard</a>
-    <a href="/rg-trading-php/pages/admin/products.php"><span class="icon">❄️</span> Products</a>
-    <a href="/rg-trading-php/pages/admin/orders.php"><span class="icon">📦</span> Orders</a>
-    <a href="/rg-trading-php/pages/admin/users.php"><span class="icon">👥</span> Users</a>
-    <a href="/rg-trading-php/pages/admin/categories.php" class="active"><span class="icon">🏷️</span> Categories</a>
-    <a href="/rg-trading-php/pages/admin/reports.php"><span class="icon">📈</span> Reports</a>
-    <a href="/rg-trading-php/index.php"><span class="icon">🏪</span> View Store</a>
-  </div>
+  <?php include __DIR__ . '/../../includes/admin-sidebar.php'; ?>
 
   <div class="admin-main">
-    <div class="admin-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div class="admin-header admin-header-row">
       <div>
         <h1>Categories</h1>
         <p>Create and manage product categories</p>
@@ -91,11 +55,11 @@ include __DIR__ . '/../../includes/header.php';
       <button class="add-btn" onclick="openCreate()">+ Add Category</button>
     </div>
 
-    <div class="admin-card" style="margin-top:16px;">
+    <div class="admin-card mt-16">
       <div class="admin-card-header">
         <h3>All Categories (<?= count($categories) ?>)</h3>
       </div>
-      <div class="admin-card-body" style="padding:0;">
+      <div class="admin-card-body p-0">
         <table class="data-table">
           <thead>
             <tr>
@@ -110,10 +74,10 @@ include __DIR__ . '/../../includes/header.php';
             <?php foreach ($categories as $c): ?>
               <tr>
                 <td><strong><?= h($c['name']) ?></strong></td>
-                <td style="font-size:12px;color:#718096;font-family:monospace;"><?= h($c['slug']) ?></td>
-                <td style="font-size:12px;color:#718096;max-width:300px;"><?= h($c['description'] ?? '—') ?></td>
+                <td class="text-mono-muted"><?= h($c['slug']) ?></td>
+                <td class="text-muted-wrap"><?= h($c['description'] ?? '—') ?></td>
                 <td>
-                  <span class="badge" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;">
+                  <span class="badge badge-soft-blue">
                     <?= intval($c['product_count'] ?? 0) ?>
                   </span>
                 </td>
@@ -121,7 +85,7 @@ include __DIR__ . '/../../includes/header.php';
                   <div class="action-btns">
                     <button class="btn-sm btn-sm-blue"
                       onclick='openEdit(<?= json_encode($c) ?>)'>Edit</button>
-                    <form method="POST" style="display:inline;"
+                      <form method="POST" class="inline-form"
                       onsubmit="return confirm('Delete category &quot;<?= h(addslashes($c['name'])) ?>&quot;? Products in this category will be unlinked.');">
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="category_id" value="<?= h($c['id']) ?>">
@@ -132,7 +96,7 @@ include __DIR__ . '/../../includes/header.php';
               </tr>
             <?php endforeach; ?>
             <?php if (empty($categories)): ?>
-              <tr><td colspan="5" style="text-align:center;color:#a0aec0;padding:30px;">No categories found.</td></tr>
+              <tr><td colspan="5" class="text-center text-xs-muted p-30">No categories found.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>
@@ -159,7 +123,7 @@ include __DIR__ . '/../../includes/header.php';
           <div class="form-group">
             <label>Slug *</label>
             <input type="text" name="slug" required id="c_slug" placeholder="e.g. window-type">
-            <small style="color:#718096;font-size:11px;">Lowercase, numbers, hyphens only. Auto-filled from name.</small>
+            <small class="form-note">Lowercase, numbers, hyphens only. Auto-filled from name.</small>
           </div>
           <div class="form-group full">
             <label>Description</label>
@@ -192,7 +156,7 @@ include __DIR__ . '/../../includes/header.php';
           <div class="form-group">
             <label>Slug *</label>
             <input type="text" name="slug" required id="e_slug">
-            <small style="color:#718096;font-size:11px;">Lowercase, numbers, hyphens only.</small>
+            <small class="form-note">Lowercase, numbers, hyphens only.</small>
           </div>
           <div class="form-group full">
             <label>Description</label>

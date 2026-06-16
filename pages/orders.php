@@ -103,7 +103,7 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- Status Filter -->
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+<div class="d-flex gap-8 flex-wrap mb-20">
   <?php
   $statuses = [
     ''           => 'All',
@@ -117,10 +117,7 @@ include __DIR__ . '/../includes/header.php';
   foreach ($statuses as $val => $label):
   ?>
     <a href="?status=<?= urlencode($val) ?>"
-       style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;
-              background:<?= $status === $val ? '#1a365d' : '#fff' ?>;
-              color:<?= $status === $val ? '#fff' : '#4a5568' ?>;
-              border:1px solid <?= $status === $val ? '#1a365d' : '#e2e8f0' ?>;">
+       class="btn-pill <?= $status === $val ? 'btn-pill-active' : '' ?>">
       <?= h($label) ?>
     </a>
   <?php endforeach; ?>
@@ -129,7 +126,7 @@ include __DIR__ . '/../includes/header.php';
 <?php if (empty($orders)): ?>
   <div class="empty-state">
     <div class="icon">📦</div>
-    <p>No orders found. <a href="<?= BASE_URL ?>/index.php" style="color:#3182ce;">Browse products</a></p>
+    <p>No orders found. <a href="<?= BASE_URL ?>/index.php" class="link-accent">Browse products</a></p>
   </div>
 <?php else: ?>
   <div class="orders-table">
@@ -171,7 +168,7 @@ include __DIR__ . '/../includes/header.php';
               </span>
             </td>
 
-           <td style="display:flex;gap:6px;align-items:center;">
+           <td class="d-flex items-center gap-6">
 
   <!-- VIEW -->
   <a href="<?= BASE_URL ?>/pages/order-detail.php?id=<?= h($order['id']) ?>">
@@ -180,7 +177,7 @@ include __DIR__ . '/../includes/header.php';
 
   <!-- CANCEL (ONLY PENDING) -->
   <?php if (strtolower($order['status'] ?? '') === 'pending'): ?>
-    <form method="POST" style="display:inline;" onsubmit="return confirm('Cancel this order?')">
+    <form method="POST" class="inline-form" onsubmit="return confirm('Cancel this order?')">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">
       <button type="submit" class="btn-sm btn-sm-red">Cancel</button>
     </form>
@@ -190,7 +187,7 @@ include __DIR__ . '/../includes/header.php';
   <?php if (strtolower($order['status'] ?? '') === 'delivered'): ?>
     <button type="button"
             class="btn-sm btn-sm-green"
-          onclick="openReviewModal('<?= h(trim($order['items'][0]['product_id'] ?? '')) ?>')">
+            onclick="openReviewModal('<?= h(trim($order['items'][0]['product_id'] ?? '')) ?>')">
       ⭐ Review
     </button>
   <?php endif; ?>
@@ -204,7 +201,7 @@ include __DIR__ . '/../includes/header.php';
 
   <!-- PAGINATION -->
   <?php if ($total_pages > 1): ?>
-    <div class="pagination" style="margin-top:20px;">
+    <div class="pagination mt-20">
       <?php for ($i = 1; $i <= $total_pages; $i++): ?>
         <?php if ($i === $page): ?>
           <span class="active"><?= $i ?></span>
@@ -217,9 +214,9 @@ include __DIR__ . '/../includes/header.php';
     </div>
   <?php endif; ?>
 <?php endif; ?>
-<div id="reviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;">
+<div id="reviewModal" class="modal-fixed hidden">
 
-  <div style="background:#fff;width:350px;margin:100px auto;padding:20px;border-radius:10px;">
+  <div class="card-panel max-w-350 p-20">
 
     <h3>Write Review</h3>
 
@@ -231,7 +228,7 @@ include __DIR__ . '/../includes/header.php';
       <input type="hidden" name="product_id" id="review_product_id">
 
       <label>Rating</label>
-      <select name="rating" required style="width:100%;padding:8px;">
+      <select name="rating" required class="form-select w-full">
         <option value="5">⭐⭐⭐⭐⭐</option>
         <option value="4">⭐⭐⭐⭐</option>
         <option value="3">⭐⭐⭐</option>
@@ -242,12 +239,12 @@ include __DIR__ . '/../includes/header.php';
       <br><br>
 
       <label>Comment</label>
-      <textarea name="comment" required style="width:100%;padding:8px;"></textarea>
+      <textarea name="comment" required class="form-textarea w-full"></textarea>
 
       <br><br>
 
-      <button type="submit">Submit Review</button>
-      <button type="button" onclick="closeReviewModal()">Close</button>
+      <button type="submit" class="btn-primary">Submit Review</button>
+      <button type="button" class="btn-secondary" onclick="closeReviewModal()">Close</button>
 
     </form>
 

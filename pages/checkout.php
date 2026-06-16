@@ -202,9 +202,9 @@ include __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="form-group">
-          <label class="form-label">Phone Number <span style="color:#e53e3e;">*</span></label>
+          <label class="form-label">Phone Number <span class="text-danger">*</span></label>
           <input type="tel" name="phone" value="<?= $post_phone ?>" placeholder="e.g. 09123456789" pattern="[0-9+\-\s()]*" required>
-          <div class="small-muted" style="margin-top:6px;">We'll share this with the delivery rider so they can contact you.</div>
+          <div class="small-muted mt-6">We'll share this with the delivery rider so they can contact you.</div>
         </div>
 
         <div class="form-group">
@@ -216,7 +216,7 @@ include __DIR__ . '/../includes/header.php';
         <div class="summary-card">
           <div class="summary-row"><span class="muted-meta">Quantity</span><span><?= $qty ?> unit<?= $qty !== 1 ? 's' : '' ?></span></div>
           <div class="summary-row"><span class="muted-meta">Subtotal</span><span id="subtotal"><?= format_price($product['price'] * $qty) ?></span></div>
-          <div class="summary-row"><span class="muted-meta">Shipping</span><span style="color:#38a169;"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
+          <div class="summary-row"><span class="muted-meta">Shipping</span><span class="text-success"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
           <div class="summary-row total"><span>Total</span><span id="total"><?= format_price(($product['price'] * $qty) + ($product['price'] >= 10000 ? 0 : 500)) ?></span></div>
         </div>
 
@@ -227,7 +227,7 @@ include __DIR__ . '/../includes/header.php';
   <?php else: ?>
     <!-- Order Confirmation - Step 2 -->
     <div class="card-panel">
-      <h2 style="margin-bottom:24px;font-size:18px;color:#1a365d;">Order Summary</h2>
+      <h2 class="text-large text-ice-strong mb-24">Order Summary</h2>
       
       <!-- Quantity & Product -->
       <div class="confirm-section">
@@ -293,9 +293,7 @@ include __DIR__ . '/../includes/header.php';
       <!-- Price Breakdown -->
       <div class="summary-card">
         <div class="summary-row"><span class="muted-meta">Subtotal</span><span><?= format_price($product['price'] * $form_data['quantity']) ?></span></div>
-        <div class="summary-row"><span class="muted-meta">Shipping</span><span style="color:#38a169;"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
-        <div class="summary-row total"><span>Total</span><span><?= format_price(($product['price'] * $form_data['quantity']) + ($product['price'] >= 10000 ? 0 : 500)) ?></span></div>
-      </div>
+          <div class="summary-row"><span class="muted-meta">Shipping</span><span class="text-success"><?= $product['price'] >= 10000 ? 'FREE' : '₱500.00' ?></span></div>
 
       <!-- Hidden form fields to preserve data -->
       <form method="POST" id="confirmForm">
@@ -313,9 +311,9 @@ include __DIR__ . '/../includes/header.php';
           <input type="hidden" name="zip" value="<?= h($form_data['address']['zip']) ?>">
         <?php endif; ?>
 
-        <div style="display:flex;gap:12px;margin-top:20px;">
+        <div class="d-flex gap-12 mt-20">
           <button type="button" class="btn-secondary" onclick="history.back()">← Edit Details</button>
-          <button type="submit" class="btn-primary" style="flex:1;">Place Order</button>
+          <button type="submit" class="btn-primary flex-1">Place Order</button>
         </div>
       </form>
     </div>
