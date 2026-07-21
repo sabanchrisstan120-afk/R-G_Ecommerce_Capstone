@@ -104,7 +104,7 @@ if ($action === 'upload_proof') {
         'proof_uploaded_by' => $_SESSION['user']['id'] ?? null,
     ];
 
-    $apiResult = api_request('PATCH', '/admin/orders/' . urlencode($orderId) . '/status', $payload, true);
+    $apiResult = api_update_order_status($orderId, $payload, true);
     if ($apiResult['status'] !== 200) {
         @unlink($destination);
         http_response_code(500);
@@ -137,7 +137,7 @@ if ($action === 'delete_proof') {
         'delivery_status' => $revertDeliveryStatus,
     ];
 
-    $apiResult = api_request('PATCH', '/admin/orders/' . urlencode($orderId) . '/status', $payload, true);
+    $apiResult = api_update_order_status($orderId, $payload, true);
     if ($apiResult['status'] !== 200) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $apiResult['body']['message'] ?? 'Proof delete failed.']);

@@ -5,28 +5,13 @@ require_admin();
 $role   = $_GET['role']   ?? '';
 $search = trim($_GET['search'] ?? '');
 $page   = max(1, intval($_GET['page'] ?? 1));
-$params = http_build_query(array_filter(['role' => $role, 'search' => $search, 'page' => $page, 'limit' => 15]));
+$limit  = 10;
+$params = http_build_query(array_filter(['role' => $role, 'search' => $search, 'page' => $page, 'limit' => $limit]));
 
 $result     = api_request('GET', '/admin/users?' . $params, [], true);
 $users      = $result['body']['data']['users']      ?? [];
 $pagination = $result['body']['data']['pagination'] ?? [];
-$total_pages = ceil(($pagination['total'] ?? 0) / 15);
-
-// Handle create rider
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rider'])) {
-    $create_result = api_request('POST', '/admin/users', [
-        'email'      => trim($_POST['email'] ?? ''),
-        'password'   => trim($_POST['password'] ?? ''),
-        'first_name' => trim($_POST['first_name'] ?? ''),
-        'last_name'  => trim($_POST['last_name'] ?? ''),
-        'phone'      => trim($_POST['phone'] ?? '') ?: null,
-    ], true);
-
-    set_flash($create_result['status'] === 201 ? 'success' : 'error',
-              $create_result['body']['message'] ?? 'Could not create rider.');
-    header('Location: /rg-trading-php/pages/admin/users.php');
-    exit;
-}
+$total_pages = ceil(($pagination['total'] ?? 0) / $limit);
 
 // Handle toggle status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_id'])) {
@@ -47,28 +32,12 @@ include __DIR__ . '/../../includes/header.php';
   <div class="admin-main">
     <div class="admin-header">
       <h1>Users</h1>
-      <p>Manage customer, admin, and rider accounts</p>
-    </div>
-
-    <!-- Create Rider -->
-    <div class="admin-card mb-20">
-      <div class="admin-card-header"><h3>Create Rider Account</h3></div>
-      <div class="admin-card-body card-padding">
-        <form method="POST" class="form-grid">
-          <input type="hidden" name="create_rider" value="1">
-          <input type="text" name="first_name" placeholder="First name" required class="form-input">
-          <input type="text" name="last_name" placeholder="Last name" required class="form-input">
-          <input type="email" name="email" placeholder="Email" required class="form-input">
-          <input type="text" name="phone" placeholder="Phone" class="form-input">
-          <input type="password" name="password" placeholder="Password" required class="form-input">
-          <button type="submit" class="btn-sm btn-sm-green btn-create">Create Rider</button>
-        </form>
-      </div>
+      <p>Manage customer and admin accounts</p>
     </div>
 
     <!-- Role Filter -->
     <div class="filters-wrap">
-      <?php foreach (['' => 'All Users', 'customer' => 'Customers', 'admin' => 'Admins', 'rider' => 'Riders'] as $val => $label): ?>
+      <?php foreach (['' => 'All Users', 'customer' => 'Customers', 'admin' => 'Admins'] as $val => $label): ?>
         <a href="?role=<?= urlencode($val) ?>" class="pill <?= $role === $val ? 'active' : '' ?>">
           <?= $label ?>
         </a>
@@ -109,7 +78,6 @@ include __DIR__ . '/../../includes/header.php';
                     $roleClassMap = [
                       'admin' => 'badge-processing',
                       'customer' => 'badge-soft-blue',
-                      'rider' => 'badge-soft-blue',
                     ];
                     $roleClass = $roleClassMap[$u['role']] ?? '';
                   ?>
@@ -150,13 +118,30 @@ include __DIR__ . '/../../includes/header.php';
     <!-- Pagination -->
     <?php if ($total_pages > 1): ?>
       <div class="pagination">
-        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+        <?php if ($page > 1): ?>
+          <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="pagination-arrow">&lsaquo;</a>
+        <?php else: ?>
+          <span class="pagination-arrow disabled">&lsaquo;</span>
+        <?php endif; ?>
+
+        <?php
+          $window     = 10;
+          $page_start = max(1, min($page - intdiv($window, 2), $total_pages - $window + 1));
+          $page_end   = min($total_pages, $page_start + $window - 1);
+        ?>
+        <?php for ($i = $page_start; $i <= $page_end; $i++): ?>
           <?php if ($i === $page): ?>
             <span class="active"><?= $i ?></span>
           <?php else: ?>
             <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
           <?php endif; ?>
         <?php endfor; ?>
+
+        <?php if ($page < $total_pages): ?>
+          <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="pagination-arrow">&rsaquo;</a>
+        <?php else: ?>
+          <span class="pagination-arrow disabled">&rsaquo;</span>
+        <?php endif; ?>
       </div>
     <?php endif; ?>
   </div>

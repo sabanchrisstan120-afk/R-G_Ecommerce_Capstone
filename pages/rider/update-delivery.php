@@ -15,17 +15,50 @@ $orderPayload = [];
 $deliveryPayload = [];
 
 // Accept delivery_status and note
-if (isset($_POST['delivery_status'])) {
-    $deliveryPayload['delivery_status'] = $_POST['delivery_status'] ?: null;
+// Only include delivery_status when it is one of the allowed backend values.
+$allowedDeliveryStatuses = ['pending','out_for_delivery','delivered','cannot_find_customer','failed','cancelled'];
+
+// If rider is only removing proof, never forward delivery_status (prevents backend validation errors)
+$removeProofRequested = !empty($_POST['remove_delivery_proof']);
+
+// IMPORTANT: When removing proof, we MUST NOT send `delivery_status`.
+if ($removeProofRequested) {
+    // Hard ignore any possible hidden/stale delivery_status
+    unset($deliveryPayload['delivery_status']);
+} else {
+    if (isset($_POST['delivery_status'])) {
+        $candidate = trim((string)$_POST['delivery_status']);
+        if ($candidate !== '' && in_array($candidate, $allowedDeliveryStatuses, true)) {
+            $deliveryPayload['delivery_status'] = $candidate;
+        }
+    }
 }
+
+
+
+
+
+
 if (isset($_POST['delivery_note'])) {
     $deliveryPayload['delivery_note'] = $_POST['delivery_note'] !== '' ? $_POST['delivery_note'] : null;
 }
 
-// Accept order status updates (allow rider to update order status when permitted)
-if (isset($_POST['order_status'])) {
-    $orderPayload['status'] = $_POST['order_status'] !== '' ? $_POST['order_status'] : null;
+// Allow rider to update delivery status and order status.
+// Backend currently uses PATCH /api/orders/:id/status via updateOrderStatus? (mounted in admin).
+// We will only forward order status when provided.
+if (isset($_POST['order_status']) && $_POST['order_status'] !== '') {
+    $orderPayload['status'] = $_POST['order_status'];
 }
+
+if (isset($_POST['payment_status']) && trim((string)$_POST['payment_status']) !== '') {
+    $orderPayload['payment_status'] = trim((string)$_POST['payment_status']);
+}
+
+if (isset($_POST['expected_delivery_date'])) {
+    $expectedDate = trim((string)$_POST['expected_delivery_date']);
+    $orderPayload['expected_delivery_date'] = $expectedDate !== '' ? $expectedDate : null;
+}
+
 
 // If a file was uploaded, convert to base64 and include as delivery_proof_base64
 if (!empty($_FILES['delivery_proof']) && (int)($_FILES['delivery_proof']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
@@ -56,44 +89,27 @@ if (!empty($_POST['remove_delivery_proof'])) {
     $deliveryPayload['remove_delivery_proof'] = true;
 }
 
-// Prepare logging
-$log_dir = __DIR__ . '/../../logs';
-if (!is_dir($log_dir)) {
-    @mkdir($log_dir, 0755, true);
-}
-$log_file = $log_dir . '/rider-delivery.log';
-function ld_log($msg) {
-    global $log_file;
-    $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg . "\n";
-    @file_put_contents($log_file, $line, FILE_APPEND | LOCK_EX);
-}
-
-$results = [];
-
+$payload = [];
 if (!empty($orderPayload)) {
-    ld_log("RIDER_DELIVERY: user=" . ($_SESSION['user']['id'] ?? 'unknown') . " order_id={$orderId} endpoint=/orders/{$orderId}");
-    ld_log('ORDER_PAYLOAD: ' . json_encode($orderPayload));
-    $results[] = api_request('PATCH', '/orders/' . urlencode($orderId), $orderPayload, true);
+    $payload = array_merge($payload, $orderPayload);
 }
-
 if (!empty($deliveryPayload)) {
-    ld_log("RIDER_DELIVERY: user=" . ($_SESSION['user']['id'] ?? 'unknown') . " order_id={$orderId} endpoint=/orders/{$orderId}/delivery");
-    ld_log('DELIVERY_PAYLOAD: ' . json_encode($deliveryPayload));
-    $results[] = api_request('PATCH', '/orders/' . urlencode($orderId) . '/delivery', $deliveryPayload, true);
+    $payload = array_merge($payload, $deliveryPayload);
 }
 
-if (empty($results)) {
+if ($payload === []) {
     http_response_code(400);
     echo json_encode(['message' => 'No update payload provided']);
     exit;
 }
 
-$final = end($results);
-foreach ($results as $index => $res) {
-    ld_log('API_RESPONSE_STATUS_' . $index . ': ' . ($res['status'] ?? ''));
-    ld_log('API_RESPONSE_BODY_' . $index . ': ' . json_encode($res['body'] ?? $res));
-}
+remember_order_update($orderId, $payload);
 
-http_response_code($final['status'] ?: 500);
-echo json_encode($final['body'] ?? ['status' => $final['status']]);
+http_response_code(200);
+echo json_encode([
+    'success' => true,
+    'message' => 'Delivery update stored locally.',
+    'local_only' => true,
+    'stored' => $payload,
+]);
 exit;

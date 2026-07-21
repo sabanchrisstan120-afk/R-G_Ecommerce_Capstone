@@ -3,6 +3,55 @@ require_once __DIR__ . '/../../includes/config.php';
 require_admin();
 
 /* ===============================
+   HANDLE ADMIN ORDER UPDATES
+=================================*/
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_update_order_id'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        set_flash('error', 'Invalid CSRF token.');
+        header('Location: ' . $_SERVER['REQUEST_URI']);
+        exit;
+    }
+
+    $order_id = trim($_POST['admin_update_order_id']);
+    $status = trim($_POST['status'] ?? '');
+    $delivery_status = trim($_POST['delivery_status'] ?? '');
+    $payment_status = trim($_POST['payment_status'] ?? '');
+    $expected_delivery_date = trim($_POST['expected_delivery_date'] ?? '');
+
+    $payload = [];
+    if ($status !== '') {
+        $payload['status'] = $status;
+    }
+    if ($delivery_status !== '') {
+        $payload['delivery_status'] = $delivery_status;
+    }
+    if ($payment_status !== '') {
+        $payload['payment_status'] = $payment_status;
+    }
+    if ($expected_delivery_date !== '') {
+        $payload['expected_delivery_date'] = $expected_delivery_date;
+    }
+
+    if (!empty($payload)) {
+        $update_result = api_update_order_status($order_id, $payload, true);
+        $ok = (($update_result['status'] ?? 500) === 200)
+            && (($update_result['body']['success'] ?? false) === true);
+
+        if ($ok) {
+            set_flash('success', 'Order updated successfully.');
+        } else {
+            $message = $update_result['body']['message'] ?? 'Failed to update the order. Please try again.';
+            set_flash('error', $message);
+        }
+    } else {
+        set_flash('error', 'No order fields were changed.');
+    }
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit;
+}
+
+/* ===============================
    Helper Functions
 =================================*/
 function format_address(?array $addr): string {
@@ -17,51 +66,12 @@ function format_address(?array $addr): string {
 }
 
 /* ===============================
-   Update Order Status
-=================================*/
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_id'])) {
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        set_flash('error', 'Invalid CSRF token. Please try again.');
-        header('Location: orders.php?' . http_build_query([
-            'status' => $_GET['status'] ?? '',
-            'page'   => $_GET['page'] ?? 1
-        ]));
-        exit;
-    }
-
-    $upd_result = api_request(
-        'PATCH',
-        '/admin/orders/' . $_POST['update_order_id'] . '/status',
-        [
-            'status'                 => $_POST['new_status'] ?? null,
-            'payment_status'         => $_POST['new_payment_status'] ?? null,
-            'expected_delivery_date' => trim($_POST['expected_delivery_date'] ?? '') ?: null,
-            'rider_id'               => trim($_POST['rider_id'] ?? '') ?: null,
-            'delivery_status'        => trim($_POST['delivery_status'] ?? '') ?: null,
-            'delivery_note'          => trim($_POST['delivery_note'] ?? '') ?: null,
-        ],
-        true
-    );
-
-    set_flash(
-        $upd_result['status'] === 200 ? 'success' : 'error',
-        $upd_result['body']['message'] ?? 'Update failed.'
-    );
-
-    header('Location: orders.php?' . http_build_query([
-        'status' => $_GET['status'] ?? '',
-        'page'   => $_GET['page'] ?? 1
-    ]));
-    exit;
-}
-
-/* ===============================
    Filters
 =================================*/
 $status = $_GET['status'] ?? '';
 $search = trim($_GET['search'] ?? '');
 $page   = max(1, intval($_GET['page'] ?? 1));
-$limit  = 15;
+$limit  = 10;
 
 $query_params = ['page' => $page, 'limit' => $limit];
 if ($status !== '') $query_params['status'] = $status;
@@ -69,15 +79,11 @@ if ($search !== '') $query_params['search'] = $search;
 
 $params = http_build_query($query_params);
 
-$riders = [];
-$rider_result = api_request('GET', '/admin/users?role=rider&limit=100', [], true);
-$riders = $rider_result['body']['data']['users'] ?? $rider_result['body']['users'] ?? [];
-
 /* ===============================
    Fetch Orders
 =================================*/
 $result     = api_request('GET', '/orders/admin?' . $params, [], true);
-$orders     = $result['body']['data']['orders'] ?? $result['body']['orders'] ?? [];
+$orders     = enrich_orders_with_details($result['body']['data']['orders'] ?? $result['body']['orders'] ?? []);
 $pagination = $result['body']['data']['pagination'] ?? $result['body']['pagination'] ?? ['total' => 0];
 $total_pages = ceil(($pagination['total'] ?? 0) / $limit);
 
@@ -99,13 +105,13 @@ include __DIR__ . '/../../includes/header.php';
   <div class="filters-wrap">
     <?php
     $statuses = [
-      ''           => 'All',
-      'pending'    => 'Pending',
-      'confirmed'  => 'Confirmed',
-      'processing' => 'Processing',
-      'shipped'    => 'Shipped',
-      'delivered'  => 'Delivered',
-      'cancelled'  => 'Cancelled',
+      '' => 'All',
+      'pending_review' => 'Pending Review',
+      'approved' => 'Approved',
+      'rejected' => 'Rejected',
+      'out_for_delivery' => 'Out for Delivery',
+      'delivered' => 'Delivered',
+      'cancelled' => 'Cancelled',
     ];
     foreach ($statuses as $val => $label):
     ?>
@@ -132,25 +138,25 @@ include __DIR__ . '/../../includes/header.php';
     <div class="admin-card-body card-no-padding">
       <table class="data-table">
         <thead>
-          <tr>
-            <th>Order #</th>
-            <th>Customer</th>
-            <th>Delivery Address</th>
-            <th>Date</th>
-            <th>Expected Delivery</th>
-            <th>Total</th>
-            <th>Rider</th>
-            <th>Status</th>
-            <th>Delivery</th>
-            <th>Payment</th>
-            <th>Proof</th>
-            <th>Update</th>
-          </tr>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Delivery Address</th>
+              <th>Contact</th>
+              <th>Date</th>
+              <th>Expected Delivery</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Delivery</th>
+              <th>Payment</th>
+              <th>Actions</th>
+              <!-- <th>Proof</th> -->
+            </tr>
         </thead>
         <tbody>
           <?php if (empty($orders)): ?>
             <tr>
-              <td colspan="11" class="table-empty">No orders found</td>
+              <td colspan="12" class="table-empty">No orders found</td>
             </tr>
           <?php else: ?>
             <?php foreach ($orders as $o): ?>
@@ -159,25 +165,30 @@ include __DIR__ . '/../../includes/header.php';
 
                 <td>
                   <div class="text-small">
-                    <?= h(($o['first_name'] ?? '') . ' ' . ($o['last_name'] ?? $o['customer_name'] ?? '')) ?>
+                    <?= h(get_order_customer_name($o)) ?>
                   </div>
                   <div class="muted-small">
-                    <?= h($o['email'] ?? '') ?>
+                    <?= h(get_order_customer_email($o)) ?>
                   </div>
+                  <?php $phone = get_order_phone($o); if ($phone !== ''): ?>
+                    <div class="muted-small">
+                      <?= h($phone) ?>
+                    </div>
+                  <?php endif; ?>
                 </td>
 
                 <td class="text-small min-w-180">
-                  <?php if (!empty($o['street'])): ?>
-                    <div><?= h($o['street']) ?></div>
-                    <div class="muted-small">
-                      <?= h(implode(', ', array_filter([$o['city'] ?? '', $o['province'] ?? '']))) ?>
-                      <?php if (!empty($o['zip'])): ?>
-                        <?= h($o['zip']) ?>
-                      <?php endif; ?>
-                    </div>
+                  <?php $address = format_order_address($o); ?>
+                  <?php if ($address !== '—'): ?>
+                    <?= h($address) ?>
                   <?php else: ?>
                     <span class="text-small muted-small">—</span>
                   <?php endif; ?>
+                </td>
+
+                <td class="text-small">
+                  <?php $phone = get_order_phone($o); ?>
+                  <?= $phone !== '' ? h($phone) : '<span class="text-small muted-small">—</span>' ?>
                 </td>
 
                 <td class="text-small">
@@ -185,7 +196,17 @@ include __DIR__ . '/../../includes/header.php';
                 </td>
 
                 <td class="text-small">
-                  <?= !empty($o['expected_delivery_date']) ? date('M d, Y', strtotime($o['expected_delivery_date'])) : '—' ?>
+                  <div class="text-small mb-6">
+                    <?= !empty($o['expected_delivery_date']) ? date('M d, Y', strtotime($o['expected_delivery_date'])) : '<span class="muted-small">—</span>' ?>
+                  </div>
+                  <input
+                    type="date"
+                    class="form-input"
+                    form="admin-order-update-<?= h($o['id']) ?>"
+                    name="expected_delivery_date"
+                    value="<?= !empty($o['expected_delivery_date']) ? h(date('Y-m-d', strtotime($o['expected_delivery_date']))) : '' ?>"
+                    aria-label="Expected delivery date"
+                  />
                 </td>
 
                 <td>
@@ -193,28 +214,72 @@ include __DIR__ . '/../../includes/header.php';
                 </td>
 
                 <td>
-                  <?= h(trim(($o['rider_first_name'] ?? '') . ' ' . ($o['rider_last_name'] ?? ''))) ?: '—' ?>
+                  <select class="form-select" form="admin-order-update-<?= h($o['id']) ?>" name="status" aria-label="Order status">
+                    <?php
+                      $statusOptions = order_status_options();
+                      $currentStatus = strtolower($o['status'] ?? 'pending');
+                    ?>
+                    <?php foreach ($statusOptions as $option): ?>
+                      <option value="<?= h($option) ?>" <?= $option === $currentStatus ? 'selected' : '' ?>>
+                        <?= h(order_status_label($option)) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
                 </td>
 
                 <td>
-                  <span class="badge badge-<?= h($o['status'] ?? '') ?>">
-                    <?= h(ucfirst($o['status'] ?? '')) ?>
-                  </span>
+                  <select class="form-select" form="admin-order-update-<?= h($o['id']) ?>" name="delivery_status" aria-label="Delivery status">
+                    <?php
+                      $deliveryOptions = delivery_status_options();
+                      $currentDelivery = strtolower($o['delivery_status'] ?? 'pending');
+                    ?>
+                    <?php foreach ($deliveryOptions as $option): ?>
+                      <option value="<?= h($option) ?>" <?= $option === $currentDelivery ? 'selected' : '' ?>>
+                        <?= h(ucfirst(str_replace('_', ' ', $option))) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
                 </td>
 
                 <td>
-                  <span class="badge badge-<?= h($o['delivery_status'] ?? '') ?>">
-                    <?= h(ucfirst(str_replace('_', ' ', $o['delivery_status'] ?? ''))) ?>
-                  </span>
+                  <select class="form-select" form="admin-order-update-<?= h($o['id']) ?>" name="payment_status" aria-label="Payment status">
+                    <?php
+                      $paymentOptions = payment_status_options();
+                      $currentPayment = strtolower($o['payment_status'] ?? 'pending');
+                    ?>
+                    <?php foreach ($paymentOptions as $option): ?>
+                      <option value="<?= h($option) ?>" <?= $option === $currentPayment ? 'selected' : '' ?>>
+                        <?= h(ucfirst(str_replace('_', ' ', $option))) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
                 </td>
 
                 <td>
-                  <span class="badge badge-<?= h($o['payment_status'] ?? '') ?>">
-                    <?= h(ucfirst($o['payment_status'] ?? '')) ?>
-                  </span>
-                </td>
+                  <form id="admin-order-update-<?= h($o['id']) ?>" method="POST" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
+                    <input type="hidden" name="admin_update_order_id" value="<?= h($o['id']) ?>">
+                    <button type="submit" class="btn-sm btn-sm-green">Save</button>
+                  </form>
 
-                <td class="proof-cell">
+                  <?php if (strtolower($o['status'] ?? '') === 'pending'): ?>
+                    <div class="display-grid gap-6">
+                      <form method="POST" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
+                        <input type="hidden" name="admin_update_order_id" value="<?= h($o['id']) ?>">
+                        <input type="hidden" name="status" value="confirmed">
+                        <button type="submit" class="btn-sm btn-sm-green">Approve</button>
+                      </form>
+                      <form method="POST" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
+                        <input type="hidden" name="admin_update_order_id" value="<?= h($o['id']) ?>">
+                        <input type="hidden" name="status" value="cancelled">
+                        <button type="submit" class="btn-sm btn-sm-red">Reject</button>
+                      </form>
+                    </div>
+                  <?php endif; ?>
+                </td>
+                <!-- <td class="proof-cell">
                   <?php
                     $proofUrl = !empty($o['proof_of_delivery_image']) ? $o['proof_of_delivery_image'] : ($o['delivery_proof_url'] ?? '');
                     $proofUploadedAt = !empty($o['proof_uploaded_at']) ? date('M d, Y H:i', strtotime($o['proof_uploaded_at'])) : '';
@@ -236,64 +301,8 @@ include __DIR__ . '/../../includes/header.php';
                       <span class="badge badge-warning">NO PROOF</span>
                     <?php endif; ?>
                   </div>
-                </td>
+                </td> -->
 
-                <td>
-                  <form method="POST" class="form-grid">
-                    <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>">
-                    <input type="hidden" name="update_order_id" value="<?= h($o['id']) ?>">
-
-                    <select name="new_status" class="form-select">
-                      <option value="">Status...</option>
-                      <?php foreach (['confirmed','processing','shipped','delivered','cancelled'] as $s): ?>
-                        <option value="<?= $s ?>" <?= ($o['status'] ?? '') === $s ? 'selected' : '' ?>>
-                          <?= ucfirst($s) ?>
-                        </option>
-                      <?php endforeach; ?>
-                    </select>
-
-                    <select name="new_payment_status" class="form-select">
-                      <option value="">Payment...</option>
-                      <?php foreach (['paid','pending','failed','refunded'] as $ps): ?>
-                        <option value="<?= $ps ?>" <?= ($o['payment_status'] ?? '') === $ps ? 'selected' : '' ?>>
-                          <?= ucfirst($ps) ?>
-                        </option>
-                      <?php endforeach; ?>
-                    </select>
-
-                    <input type="date" name="expected_delivery_date"
-                           value="<?= !empty($o['expected_delivery_date']) ? date('Y-m-d', strtotime($o['expected_delivery_date'])) : '' ?>"
-                           class="form-input">
-
-                    <?php if (!empty($riders)): ?>
-                      <select name="rider_id" class="form-select">
-                        <option value="">Assign rider...</option>
-                        <?php foreach ($riders as $rider): ?>
-                          <option value="<?= h($rider['id']) ?>" <?= ($o['rider_id'] ?? '') === $rider['id'] ? 'selected' : '' ?>>
-                            <?= h(trim($rider['first_name'] . ' ' . $rider['last_name'])) ?> (<?= h($rider['email']) ?>)
-                          </option>
-                        <?php endforeach; ?>
-                      </select>
-                    <?php else: ?>
-                      <input type="text" name="rider_id" value="<?= h($o['rider_id'] ?? '') ?>"
-                             placeholder="Rider ID" class="form-input">
-                    <?php endif; ?>
-
-                    <select name="delivery_status" class="form-select">
-                      <option value="">Delivery...</option>
-                      <?php foreach (['pending','out_for_delivery','delivered','cannot_find_customer','failed','damaged'] as $ds): ?>
-                        <option value="<?= $ds ?>" <?= ($o['delivery_status'] ?? '') === $ds ? 'selected' : '' ?>>
-                          <?= ucfirst(str_replace('_', ' ', $ds)) ?>
-                        </option>
-                      <?php endforeach; ?>
-                    </select>
-
-                    <input type="text" name="delivery_note" value="<?= h($o['delivery_note'] ?? '') ?>"
-                           placeholder="Delivery note" class="form-input">
-
-                    <button type="submit" class="btn-sm btn-sm-blue">Save</button>
-                  </form>
-                </td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -305,7 +314,18 @@ include __DIR__ . '/../../includes/header.php';
   <!-- Pagination -->
   <?php if ($total_pages > 1): ?>
     <div class="pagination">
-      <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+      <?php if ($page > 1): ?>
+        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="pagination-arrow">&lsaquo;</a>
+      <?php else: ?>
+        <span class="pagination-arrow disabled">&lsaquo;</span>
+      <?php endif; ?>
+
+      <?php
+        $window     = 10;
+        $page_start = max(1, min($page - intdiv($window, 2), $total_pages - $window + 1));
+        $page_end   = min($total_pages, $page_start + $window - 1);
+      ?>
+      <?php for ($i = $page_start; $i <= $page_end; $i++): ?>
         <?php if ($i === $page): ?>
           <span class="active"><?= $i ?></span>
         <?php else: ?>
@@ -314,6 +334,12 @@ include __DIR__ . '/../../includes/header.php';
           </a>
         <?php endif; ?>
       <?php endfor; ?>
+
+      <?php if ($page < $total_pages): ?>
+        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="pagination-arrow">&rsaquo;</a>
+      <?php else: ?>
+        <span class="pagination-arrow disabled">&rsaquo;</span>
+      <?php endif; ?>
     </div>
   <?php endif; ?>
 

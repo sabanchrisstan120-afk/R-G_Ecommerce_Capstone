@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title><?= h($page_title ?? APP_NAME) ?></title>
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
+  <?php if (!empty($page_css)): ?>
+    <link rel="stylesheet" href="<?= BASE_URL . $page_css ?>">
+  <?php endif; ?>
 </head>
 <body>
 
@@ -18,7 +21,11 @@
     </div>
 
     <div class="nav-links">
-      <a href="<?= BASE_URL ?>/index.php">Products</a>
+      <?php if (is_admin()): ?>
+        <a href="<?= BASE_URL ?>/pages/admin/adminindex.php">Products</a>
+      <?php else: ?>
+        <a href="<?= BASE_URL ?>/index.php">Products</a>
+      <?php endif; ?>
 
       <?php if (!is_rider()): ?>
         <a href="<?= BASE_URL ?>/pages/cart.php" class="cart-icon" aria-label="View cart">
@@ -32,7 +39,9 @@
       <?php endif; ?>
   
   <?php if (is_logged_in()): ?>
-        <?php if (is_rider()): ?>
+        <?php if (is_admin()): ?>
+          <a href="<?= BASE_URL ?>/pages/admin/orders.php">Orders</a>
+        <?php elseif (is_rider()): ?>
           <a href="<?= BASE_URL ?>/pages/rider/orders.php">Rider Orders</a>
         <?php else: ?>
           <a href="<?= BASE_URL ?>/pages/orders.php">Orders</a>

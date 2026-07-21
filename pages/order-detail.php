@@ -5,6 +5,9 @@ require_login();
 $id     = $_GET['id'] ?? '';
 $result = api_request('GET', '/orders/' . urlencode($id), [], true);
 $order  = $result['body']['data']['order'] ?? null;
+if ($order && isset($order['id'])) {
+    $order = array_merge($order, get_order_state_store()[(string) $order['id']] ?? []);
+}
 
 if (!$order) {
     set_flash('error', 'Order not found.');
@@ -12,16 +15,18 @@ if (!$order) {
 }
 
 // Order status steps
-$steps = ['pending','confirmed','processing','shipped','delivered'];
 $current_status = $order['status'];
 $is_cancelled   = $current_status === 'cancelled';
 
 function step_state(string $step, string $current, bool $cancelled): string {
     if ($cancelled) return $step === $current ? 'cancelled' : 'done';
-    $steps = ['pending','confirmed','processing','shipped','delivered'];
+    $steps = ['pending_review','approved','out_for_delivery','delivered'];
     $cur_i = array_search($current, $steps);
     $step_i = array_search($step, $steps);
-    if ($step_i < $cur_i)  return 'done';
+    if ($cur_i === false || $step_i === false) {
+        return '';
+    }
+    if ($step_i < $cur_i) return 'done';
     if ($step_i === $cur_i) return 'active';
     return '';
 }
@@ -43,7 +48,8 @@ include __DIR__ . '/../includes/header.php';
     <div class="admin-card-body p-22">
       <div class="status-timeline">
         <?php
-        $icons = ['pending'=>'🕐','confirmed'=>'✅','processing'=>'⚙️','shipped'=>'🚚','delivered'=>'🏠'];
+        $steps = ['pending_review','approved','out_for_delivery','delivered'];
+        $icons = ['pending_review'=>'📝','approved'=>'✅','out_for_delivery'=>'🚚','delivered'=>'🏠'];
         foreach ($steps as $s):
           $state = step_state($s, $current_status, $is_cancelled);
         ?>
@@ -64,7 +70,7 @@ include __DIR__ . '/../includes/header.php';
   <!-- Summary Row -->
   <div class="grid-auto-200 mb-26">
     <?php $info = [
-      'Order Status'   => ucfirst($order['status']),
+      'Order Status'   => order_status_label($order['status'] ?? 'pending_review'),
       'Payment'        => ucfirst($order['payment_status']),
       'Payment Method' => ucwords(str_replace('_', ' ', $order['payment_method'] ?? 'N/A')),
       'Date Ordered'   => date('M d, Y', strtotime($order['ordered_at'])),
@@ -83,12 +89,6 @@ include __DIR__ . '/../includes/header.php';
   <div class="admin-card mb-24">
     <div class="admin-card-header"><h3>Delivery Information</h3></div>
     <div class="admin-card-body grid-gap-14">
-      <div>
-        <div class="info-card-label">Rider</div>
-        <div class="info-card-value">
-          <?= h(trim(($order['rider_first_name'] ?? '') . ' ' . ($order['rider_last_name'] ?? ''))) ?: 'Not assigned' ?>
-        </div>
-      </div>
       <div>
         <div class="info-card-label">Delivery Status</div>
         <div class="info-card-value">
@@ -148,7 +148,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <!-- Cancel button (ONLY PENDING) -->
-  <?php if ($order['status'] === 'pending'): ?>
+  <?php if (in_array($order['status'] ?? '', ['pending','pending_review'], true)): ?>
     <form method="POST" action="<?= BASE_URL ?>/pages/orders.php"
           onsubmit="return confirm('Cancel this order?');">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">

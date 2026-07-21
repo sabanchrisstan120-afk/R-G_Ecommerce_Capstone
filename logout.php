@@ -9,5 +9,5 @@ if (isset($_SESSION['refresh_token'])) {
 // Destroy the local session
 session_destroy();
 
-header('Location: /rg-trading-php/login.php');
+header('Location: /rg-trading-php/index.php');
 exit;

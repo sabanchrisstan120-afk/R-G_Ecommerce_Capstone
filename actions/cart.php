@@ -25,9 +25,9 @@ if (!$product) {
   exit;
 }
 
-// Fetch saved address from user profile
-$profile_result  = api_request('GET', '/profile', [], true);
-$saved_address   = $profile_result['body']['data']['user']['address'] ?? null;
+// Fetch saved address from the authenticated user profile
+$profile = get_authenticated_profile();
+$saved_address = $profile['address'] ?? null;
 // Expected shape: ['street' => '', 'city' => '', 'province' => '', 'zip' => '']
 
 // Handle order submission

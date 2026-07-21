@@ -17,9 +17,9 @@ if (!$product) {
     exit;
 }
 
-// Fetch saved address from user profile
-$profile_result  = api_request('GET', '/profile', [], true);
-$saved_address   = $profile_result['body']['data']['user']['address'] ?? null;
+// Fetch saved address from the authenticated user profile
+$profile = get_authenticated_profile();
+$saved_address = $profile['address'] ?? null;
 
 // Variables to hold form data
 $form_data = [
@@ -77,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'payment_method' => $form_data['payment_method'],
                     'address'        => $form_data['address'],
                     'phone'          => $form_data['phone'],
+                    'status'         => 'pending_review',
+                    'payment_status' => 'pending',
                 ];
                 if (!empty($form_data['notes'])) $payload['notes'] = $form_data['notes'];
 

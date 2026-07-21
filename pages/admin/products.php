@@ -235,7 +235,8 @@ if ($action === 'permanent_delete') {
 }
 $search      = trim($_GET['search'] ?? '');
 $page        = max(1, intval($_GET['page'] ?? 1));
-$params      = http_build_query(array_filter(['search' => $search, 'page' => $page, 'limit' => 15]));
+$limit       = 10;
+$params      = http_build_query(array_filter(['search' => $search, 'page' => $page, 'limit' => $limit]));
 $result = api_request('GET', '/products/admin/list?' . $params, [], true);
 
 $products = $result['body']['data']['products'] ?? [];
@@ -254,14 +255,48 @@ foreach ($products as &$product) {
         true
     );
 
-    $reviews = $review_res['body']['reviews'] ?? [];
+    $body = $review_res['body'] ?? [];
+
+    // Every other list endpoint in this app wraps its payload as
+    // body.data.<key> (see /products, /products/categories, /orders/admin
+    // above). This one was only checking body.reviews, which this API
+    // never actually returns — so reviews/ratings always came back empty.
+    if (isset($body['data']['reviews']) && is_array($body['data']['reviews'])) {
+        $raw_reviews = $body['data']['reviews'];
+    } elseif (isset($body['data']) && is_array($body['data']) && !is_associative_array($body['data'])) {
+        $raw_reviews = $body['data'];
+    } elseif (isset($body['reviews']) && is_array($body['reviews'])) {
+        $raw_reviews = $body['reviews'];
+    } else {
+        $raw_reviews = [];
+    }
+
+    // The reviews table itself only stores rating/comment/user_id — no
+    // name — so the reviewer's name is whatever the API joins in. Flatten
+    // it here so it doesn't matter whether the API nests it under `user`,
+    // `reviewer`, or `customer`, or returns it flat.
+    $reviews = [];
+    foreach ($raw_reviews as $r) {
+        if (!is_array($r)) {
+            continue;
+        }
+        $reviewer = $r['user'] ?? $r['reviewer'] ?? $r['customer'] ?? [];
+        $reviews[] = [
+            'id'         => $r['id'] ?? null,
+            'rating'     => intval($r['rating'] ?? 0),
+            'comment'    => $r['comment'] ?? '',
+            'first_name' => $r['first_name'] ?? ($reviewer['first_name'] ?? ''),
+            'last_name'  => $r['last_name'] ?? ($reviewer['last_name'] ?? ''),
+            'created_at' => $r['created_at'] ?? null,
+        ];
+    }
 
     $product['reviews'] = $reviews;
 
     $total = 0;
 
     foreach ($reviews as $r) {
-        $total += intval($r['rating'] ?? 0);
+        $total += $r['rating'];
     }
 
     $product['review_count'] = count($reviews);
@@ -275,9 +310,7 @@ foreach ($products as &$product) {
 unset($product);
 
 $pagination  = $result['body']['data']['pagination'] ?? [];
-$total_pages = max(1, ceil(($pagination['total'] ?? 0) / 15));
-$pagination  = $result['body']['data']['pagination'] ?? [];
-$total_pages = max(1, ceil(($pagination['total'] ?? 0) / 15));
+$total_pages = max(1, ceil(($pagination['total'] ?? 0) / $limit));
 
 $page_title = 'Products — Admin — ' . APP_NAME;
 include __DIR__ . '/../../includes/header.php';
@@ -421,13 +454,30 @@ include __DIR__ . '/../../includes/header.php';
 
     <?php if ($total_pages > 1): ?>
       <div class="pagination">
-        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+        <?php if ($page > 1): ?>
+          <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="pagination-arrow">&lsaquo;</a>
+        <?php else: ?>
+          <span class="pagination-arrow disabled">&lsaquo;</span>
+        <?php endif; ?>
+
+        <?php
+          $window     = 10;
+          $page_start = max(1, min($page - intdiv($window, 2), $total_pages - $window + 1));
+          $page_end   = min($total_pages, $page_start + $window - 1);
+        ?>
+        <?php for ($i = $page_start; $i <= $page_end; $i++): ?>
           <?php if ($i === $page): ?>
             <span class="active"><?= $i ?></span>
           <?php else: ?>
             <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
           <?php endif; ?>
         <?php endfor; ?>
+
+        <?php if ($page < $total_pages): ?>
+          <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="pagination-arrow">&rsaquo;</a>
+        <?php else: ?>
+          <span class="pagination-arrow disabled">&rsaquo;</span>
+        <?php endif; ?>
       </div>
     <?php endif; ?>
   </div>

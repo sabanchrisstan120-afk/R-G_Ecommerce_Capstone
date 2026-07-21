@@ -7,6 +7,13 @@ require_login();
 ========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 
+    // Only customers can submit reviews — admins are not allowed to review products.
+    if (is_admin()) {
+        set_flash('error', 'Admins are not allowed to submit reviews.');
+        header('Location: ' . $_SERVER['REQUEST_URI']);
+        exit;
+    }
+
    $payload = [
     'product_id' => trim($_POST['product_id']),
     'rating'     => intval($_POST['rating']),
@@ -71,7 +78,7 @@ $limit   = 10;
 $user    = current_user();
 $user_id = $user['id'] ?? null;
 
-$endpoint = is_admin() ? '/orders/admin' : '/orders';
+$endpoint = is_admin() ? '/orders/admin' : '/orders/my-orders';
 
 $query_params = ['page' => $page, 'limit' => $limit];
 if ($status !== '') {
@@ -84,9 +91,14 @@ if (!is_admin() && $user_id) {
 $params = http_build_query($query_params);
 $result = api_request('GET', $endpoint . '?' . $params, [], true);
 
+if ((!is_admin()) && (($result['status'] ?? 0) >= 400)) {
+    $fallback_result = api_request('GET', '/orders?' . $params, [], true);
+    if (($fallback_result['status'] ?? 0) >= 200 && ($fallback_result['status'] ?? 0) < 400) {
+        $result = $fallback_result;
+    }
+}
 
-
-$orders     = $result['body']['data']['orders'] ?? $result['body']['orders'] ?? [];
+$orders     = apply_order_state_overrides($result['body']['data']['orders'] ?? $result['body']['orders'] ?? []);
 $pagination = $result['body']['data']['pagination'] ?? $result['body']['pagination'] ?? [];
 $total_pages = $pagination['total_pages'] ?? ceil(($pagination['total'] ?? 0) / $limit);
 
@@ -106,13 +118,13 @@ include __DIR__ . '/../includes/header.php';
 <div class="d-flex gap-8 flex-wrap mb-20">
   <?php
   $statuses = [
-    ''           => 'All',
-    'pending'    => 'Pending',
-    'confirmed'  => 'Confirmed',
-    'processing' => 'Processing',
-    'shipped'    => 'Shipped',
-    'delivered'  => 'Delivered',
-    'cancelled'  => 'Cancelled',
+    '' => 'All',
+    'pending_review' => 'Pending Review',
+    'approved' => 'Approved',
+    'rejected' => 'Rejected',
+    'out_for_delivery' => 'Out for Delivery',
+    'delivered' => 'Delivered',
+    'cancelled' => 'Cancelled',
   ];
   foreach ($statuses as $val => $label):
   ?>
@@ -157,34 +169,42 @@ include __DIR__ . '/../includes/header.php';
             </td>
 
             <td>
-              <span class="badge badge-<?= strtolower(h($order['status'] ?? 'pending')) ?>">
-                <?= h(ucfirst($order['status'] ?? 'Pending')) ?>
+              <span class="badge badge-<?= h(order_status_badge_class($order['status'] ?? 'pending_review')) ?>">
+                <?= h(order_status_label($order['status'] ?? 'pending_review')) ?>
               </span>
             </td>
 
             <td>
-              <span class="badge badge-<?= strtolower(h($order['payment_status'] ?? 'pending')) ?>">
-                <?= h(ucfirst($order['payment_status'] ?? 'Pending')) ?>
+              <span class="badge badge-<?= h($order['payment_status'] ?? 'pending') ?>">
+                <?= h(ucfirst(str_replace('_', ' ', $order['payment_status'] ?? 'Pending'))) ?>
               </span>
             </td>
 
-           <td class="d-flex items-center gap-6">
-
-  <!-- VIEW -->
+            <td class="d-flex items-center gap-6">
   <a href="<?= BASE_URL ?>/pages/order-detail.php?id=<?= h($order['id']) ?>">
     <button class="btn-sm btn-sm-blue">View</button>
   </a>
 
   <!-- CANCEL (ONLY PENDING) -->
-  <?php if (strtolower($order['status'] ?? '') === 'pending'): ?>
+  <?php if (in_array(strtolower($order['status'] ?? ''), ['pending','pending_review'], true)): ?>
     <form method="POST" class="inline-form" onsubmit="return confirm('Cancel this order?')">
       <input type="hidden" name="cancel_order_id" value="<?= h($order['id']) ?>">
       <button type="submit" class="btn-sm btn-sm-red">Cancel</button>
     </form>
   <?php endif; ?>
 
-  <!-- ⭐ REVIEW BUTTON (ONLY DELIVERED) -->
-  <?php if (strtolower($order['status'] ?? '') === 'delivered'): ?>
+  <!-- ⭐ REVIEW BUTTON (APPROVED OR DELIVERED, CUSTOMERS ONLY) -->
+  <?php
+    // The raw $order['status'] value (e.g. "confirmed", "shipped") does not match
+    // the human-readable labels shown in the Status column ("Approved", "Delivered").
+    // order_status_label() is the same function used to render that badge, so use
+    // its output for the comparison instead of guessing the raw enum value.
+    $status_label = strtolower(order_status_label($order['status'] ?? 'pending_review'));
+    $reviewable_labels = ['approved', 'delivered'];
+    $is_reviewable = in_array($status_label, $reviewable_labels, true)
+        || !empty($order['delivered_at']);
+  ?>
+  <?php if (!is_admin() && $is_reviewable): ?>
     <button type="button"
             class="btn-sm btn-sm-green"
             onclick="openReviewModal('<?= h(trim($order['items'][0]['product_id'] ?? '')) ?>')">
@@ -214,6 +234,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
   <?php endif; ?>
 <?php endif; ?>
+<?php if (!is_admin()): ?>
 <div id="reviewModal" class="modal-fixed hidden">
 
   <div class="card-panel max-w-350 p-20">
@@ -254,11 +275,14 @@ include __DIR__ . '/../includes/header.php';
 <script>
 function openReviewModal(productId) {
     document.getElementById('review_product_id').value = productId;
-    document.getElementById('reviewModal').style.display = 'block';
+    document.getElementById('reviewModal').classList.remove('hidden');
+    document.getElementById('reviewModal').classList.add('open');
 }
 
 function closeReviewModal() {
-    document.getElementById('reviewModal').style.display = 'none';
+    document.getElementById('reviewModal').classList.remove('open');
+    document.getElementById('reviewModal').classList.add('hidden');
 }
 </script>
+<?php endif; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

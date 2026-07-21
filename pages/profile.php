@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/config.php';
 require_login();
 
-$user = current_user();
+$user = get_authenticated_profile();
 $tab  = $_GET['tab'] ?? 'info';
 $msg  = '';
 
@@ -40,8 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'change_passwo
 }
 
 // Fetch recent orders
-$orders_res = api_request('GET', '/orders?limit=5', [], true);
-$orders     = $orders_res['body']['data']['orders'] ?? [];
+$orders_res = api_request('GET', '/orders/my-orders?limit=5', [], true);
+if (($orders_res['status'] ?? 0) >= 400) {
+    $fallback_orders = api_request('GET', '/orders?limit=5', [], true);
+    if (($fallback_orders['status'] ?? 0) >= 200 && ($fallback_orders['status'] ?? 0) < 400) {
+        $orders_res = $fallback_orders;
+    }
+}
+$orders     = $orders_res['body']['data']['orders'] ?? $orders_res['body']['orders'] ?? [];
 
 $page_title = 'My Profile — ' . APP_NAME;
 include __DIR__ . '/../includes/header.php';

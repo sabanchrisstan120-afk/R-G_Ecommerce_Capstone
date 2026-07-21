@@ -13,14 +13,60 @@ $params = http_build_query($query_params);
 
 $result = api_request('GET', '/orders/assigned?' . $params, [], true);
 $orders = $result['body']['orders'] ?? $result['body']['data']['orders'] ?? [];
+$orders = apply_order_state_overrides($orders);
+$orders = enrich_orders_with_details($orders);
+
+$store = get_order_state_store();
+foreach ($store as $order_id => $updates) {
+    $order_status = strtolower((string)($updates['status'] ?? ''));
+    $rider_id = (string)($updates['rider_id'] ?? '');
+    $current_user_id = (string)($_SESSION['user']['id'] ?? '');
+
+    $should_show_for_rider = $order_status === 'assigned_to_rider'
+        && ($rider_id === '' || $current_user_id === '' || $rider_id === $current_user_id);
+
+    if ($should_show_for_rider) {
+        $exists = false;
+        foreach ($orders as $existing_order) {
+            if ((string)($existing_order['id'] ?? '') === (string) $order_id) {
+                $exists = true;
+                break;
+            }
+        }
+
+        if (!$exists) {
+            $orders[] = [
+                'id' => $order_id,
+                'order_number' => $order_id,
+                'customer_name' => 'Customer',
+                'email' => '',
+                'phone' => '',
+                'street' => '',
+                'city' => '',
+                'province' => '',
+                'zip' => '',
+                'notes' => '',
+                'total_amount' => 0,
+                'status' => $order_status,
+                'delivery_status' => 'pending',
+                'delivery_proof_url' => '',
+                'payment_status' => 'pending',
+                'expected_delivery_date' => '',
+                'delivery_note' => '',
+            ];
+        }
+    }
+}
+
 $pagination = $result['body']['pagination'] ?? $result['body']['data']['pagination'] ?? ['total' => 0];
 $total_pages = ceil(($pagination['total'] ?? 0) / $limit);
 
 $page_title = 'Rider Orders — ' . APP_NAME;
+$page_css = '/assets/css/rider-orders.css';
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="page">
+<div id="rider-orders-page" class="page">
   <div class="page-header">
     <h1>Assigned Orders</h1>
     <p>Manage deliveries and upload proof</p>
@@ -50,24 +96,23 @@ include __DIR__ . '/../../includes/header.php';
             <tr>
               <td><strong><?= h($order['order_number'] ?? '-') ?></strong></td>
               <td class="text-small">
-                <?= h($order['customer_name'] ?? 'Customer') ?><br>
-                <span class="muted-small"><?= h($order['email'] ?? '') ?></span>
+                <?= h(get_order_customer_name($order) ?: 'Customer') ?><br>
+                <span class="muted-small"><?= h(get_order_customer_email($order)) ?></span>
               </td>
               <td class="text-small font-600">
-                <a href="tel:<?= h($order['phone'] ?? '') ?>" class="btn-link">
-                  <?= h($order['phone'] ?? 'No phone') ?>
-                </a>
+                <?php $phone = get_order_phone($order); ?>
+                <?php if ($phone !== ''): ?>
+                  <a href="tel:<?= h($phone) ?>" class="btn-link">
+                    <?= h($phone) ?>
+                  </a>
+                <?php else: ?>
+                  <span class="muted-small">No phone</span>
+                <?php endif; ?>
               </td>
               <td class="text-small min-w-180">
-                <?php
-                  $street   = $order['street']   ?? '';
-                  $city     = $order['city']      ?? '';
-                  $province = $order['province']  ?? '';
-                  $zip      = $order['zip_code']  ?? $order['zip'] ?? '';
-                ?>
-                <?php if (!empty($street)): ?>
-                  <?= h($street) ?><br>
-                  <?= h(implode(', ', array_filter([$city, $province, $zip]))) ?>
+                <?php $address = format_order_address($order); ?>
+                <?php if ($address !== '—'): ?>
+                  <?= h($address) ?>
                 <?php else: ?>
                   —
                 <?php endif; ?>
@@ -89,6 +134,9 @@ include __DIR__ . '/../../includes/header.php';
               <td>
                 <?php if (!empty($order['delivery_proof_url'])): ?>
                   <div class="display-grid gap-6">
+                    <label for="proof-upload-<?= h($order['id']) ?>"
+                           class="btn-sm btn-sm-green proof-upload text-small"
+                           data-order-id="<?= h($order['id']) ?>">Upload proof</label>
                     <a href="<?= BASE_URL ?>/pages/proof.php?path=<?= urlencode($order['delivery_proof_url']) ?>"
                        target="_blank" class="btn-sm btn-sm-green">View proof</a>
                     <button type="button"
@@ -99,7 +147,12 @@ include __DIR__ . '/../../includes/header.php';
                             data-order-id="<?= h($order['id']) ?>">Delete proof</button>
                   </div>
                 <?php else: ?>
-                  <span class="badge badge-pending">No proof</span>
+                  <div class="display-grid gap-6">
+                    <label for="proof-upload-<?= h($order['id']) ?>"
+                           class="btn-sm btn-sm-green proof-upload text-small"
+                           data-order-id="<?= h($order['id']) ?>">Upload proof</label>
+                    <span class="badge badge-pending">No proof</span>
+                  </div>
                 <?php endif; ?>
               </td>
               <td>
@@ -122,7 +175,7 @@ include __DIR__ . '/../../includes/header.php';
                             : 'Update delivery status…' ?>
                     </button>
                     <div class="dropdown-menu" role="menu">
-                      <?php foreach (['pending','out_for_delivery','delivered','cannot_find_customer','failed','cancelled'] as $ds): ?>
+                      <?php foreach (delivery_status_options() as $ds): ?>
                         <button type="button"
                                 class="dropdown-option <?= $ds === $currentDelivery ? 'is-selected' : '' ?>"
                                 data-value="<?= $ds ?>">
@@ -142,7 +195,7 @@ include __DIR__ . '/../../includes/header.php';
                       <?= $currentOrder ? h(ucfirst($currentOrder)) : 'Update order status…' ?>
                     </button>
                     <div class="dropdown-menu" role="menu">
-                      <?php foreach (['pending','confirmed','processing','shipped','delivered','cancelled'] as $os): ?>
+                      <?php foreach (order_status_options() as $os): ?>
                         <button type="button"
                                 class="dropdown-option <?= $os === $currentOrder ? 'is-selected' : '' ?>"
                                 data-value="<?= $os ?>">
@@ -153,6 +206,21 @@ include __DIR__ . '/../../includes/header.php';
                     <input type="hidden" name="order_status"
                            class="order-status" value="<?= h($currentOrder) ?>">
                   </div>
+
+                  <select name="payment_status" class="form-select payment-status">
+                    <option value="">Payment status…</option>
+                    <?php foreach (['paid','pending','failed','refunded'] as $ps): ?>
+                      <option value="<?= $ps ?>" <?= ($order['payment_status'] ?? '')  === $ps ? 'selected' : '' ?>>
+                        <?= ucfirst($ps) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+
+                  <input type="date"
+                         name="expected_delivery_date"
+                         class="form-input expected-delivery-date"
+                         value="<?= !empty($order['expected_delivery_date']) ? date('Y-m-d', strtotime($order['expected_delivery_date'])) : '' ?>"
+                         placeholder="Expected delivery date">
 
                   <!-- Delivery note -->
                   <input type="text"
@@ -165,7 +233,8 @@ include __DIR__ . '/../../includes/header.php';
                   <div class="proof-row" style="display:none;">
                     <label class="proof-label">
                       📷 Upload proof of delivery
-                      <input type="file"
+                      <input id="proof-upload-<?= h($order['id']) ?>"
+                             type="file"
                              name="delivery_proof"
                              class="delivery-proof-file"
                              data-order-id="<?= h($order['id']) ?>"
@@ -176,11 +245,27 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                   </div>
 
+                  <?php if (strtolower($order['status'] ?? '') === 'assigned_to_rider'): ?>
+                    <button type="button"
+                            class="btn-sm btn-sm-green rider-action"
+                            data-order-id="<?= h($order['id']) ?>"
+                            data-next-status="accepted_by_rider">Accept delivery</button>
+                    <button type="button"
+                            class="btn-sm btn-sm-red rider-action"
+                            data-order-id="<?= h($order['id']) ?>"
+                            data-next-status="waiting_for_new_rider">Decline delivery</button>
+                  <?php elseif (strtolower($order['status'] ?? '') === 'accepted_by_rider'): ?>
+                    <button type="button"
+                            class="btn-sm btn-sm-blue rider-action"
+                            data-order-id="<?= h($order['id']) ?>"
+                            data-next-status="out_for_delivery">Mark out for delivery</button>
+                  <?php endif; ?>
+
                   <button type="button"
                           class="btn-sm btn-sm-blue delivery-submit"
                           data-order-id="<?= h($order['id']) ?>">Save update</button>
 
-                  <div class="delivery-message" style="display:none;"></div>
+                  <div class="delivery-message" id="delivery-msg-<?= h($order['id']) ?>" style="display:none;"></div>
                 </form>
               </td>
             </tr>
@@ -203,80 +288,6 @@ include __DIR__ . '/../../includes/header.php';
   <?php endif; ?>
 </div>
 
-<style>
-  /* ── Dropdown ─────────────────────────────────────── */
-  .status-dropdown { position: relative; width: 100%; }
-
-  .status-dropdown .dropdown-toggle {
-    width: 100%;
-    text-align: left;
-  }
-
-  .status-dropdown .dropdown-menu {
-    display: none;           /* hidden by default — toggled via JS */
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
-    z-index: 50;
-    overflow: hidden;
-  }
-
-  .status-dropdown .dropdown-menu.is-open { display: block; }
-
-  .status-dropdown .dropdown-option {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 13px;
-    color: #111827;
-    transition: background 0.15s;
-  }
-  .status-dropdown .dropdown-option:hover   { background: #f3f4f6; }
-  .status-dropdown .dropdown-option.is-selected { background: #eff6ff; font-weight: 600; }
-
-  /* ── Proof upload ─────────────────────────────────── */
-  .proof-row { margin-top: 6px; }
-
-  .proof-label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 13px;
-    color: #374151;
-    cursor: pointer;
-  }
-
-  .proof-label input[type="file"] {
-    font-size: 12px;
-    color: #6b7280;
-  }
-
-  .proof-preview {
-    margin-top: 6px;
-    max-width: 120px;
-    max-height: 90px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    object-fit: cover;
-  }
-
-  /* ── Status messages ──────────────────────────────── */
-  .delivery-message {
-    font-size: 12px;
-    margin-top: 4px;
-    padding: 4px 0;
-  }
-</style>
-
 <script>
   const LOCAL_DELIVERY_ENDPOINT = '<?= BASE_URL ?>/pages/rider/update-delivery.php';
 
@@ -290,15 +301,21 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     function getFields(form) {
+      var deliveryStatusEl = form.querySelector('.delivery-status');
+      var orderStatusEl    = form.querySelector('.order-status');
+      var paymentStatusEl  = form.querySelector('.payment-status');
+      var expectedDateEl   = form.querySelector('.expected-delivery-date');
+      var noteEl           = form.querySelector('.delivery-note');
       return {
-        orderId:        form.dataset.orderId || '',
-        deliveryStatus: form.querySelector('.delivery-status')?.value  || '',
-        orderStatus:    form.querySelector('.order-status')?.value     || '',
-        note:           form.querySelector('.delivery-note')?.value.trim() || '',
-        proofInput:     form.querySelector('.delivery-proof-file'),
-        messageEl:      form.querySelector('.delivery-message'),
-        proofRow:       form.querySelector('.proof-row'),
-        hasProof:       form.dataset.hasProof === '1',
+        orderId:               form.getAttribute('data-order-id') || '',
+        deliveryStatus:        deliveryStatusEl ? deliveryStatusEl.value : '',
+        orderStatus:           orderStatusEl ? orderStatusEl.value : '',
+        paymentStatus:         paymentStatusEl ? paymentStatusEl.value : '',
+        expectedDeliveryDate:  expectedDateEl ? expectedDateEl.value : '',
+        note:                  noteEl ? noteEl.value.trim() : '',
+        proofInput:            form.querySelector('.delivery-proof-file'),
+        proofRow:              form.querySelector('.proof-row'),
+        hasProof:              form.dataset.hasProof === '1',
       };
     }
 
@@ -349,45 +366,64 @@ include __DIR__ . '/../../includes/header.php';
 
     /* ── Form UI refresh ──────────────────────────────── */
 
-    function refreshFormUI(form) {
-      const { deliveryStatus, proofRow, messageEl, hasProof } = getFields(form);
+    function ensureMessageEl(form) {
+      var messageEl = form.querySelector('.delivery-message');
+      if (!messageEl) {
+        messageEl = document.createElement('div');
+        messageEl.className = 'delivery-message';
+        messageEl.style.display = 'none';
+        form.appendChild(messageEl);
+      }
+      return messageEl;
+    }
 
-      // Show proof upload when: status = delivered AND no proof on file yet
-      if (deliveryStatus === 'delivered' && !hasProof) {
-        proofRow.style.display = '';
-      } else {
-        proofRow.style.display = 'none';
+    function refreshFormUI(form) {
+      var fields = getFields(form);
+      var deliveryStatus = fields.deliveryStatus;
+      var proofRow = fields.proofRow;
+      var hasProof = fields.hasProof;
+      var messageEl = ensureMessageEl(form);
+
+      if (proofRow) {
+        if (deliveryStatus === 'delivered' && !hasProof) {
+          proofRow.style.display = '';
+        } else {
+          proofRow.style.display = 'none';
+        }
       }
 
-      // Update placeholder hint
-      const noteInput = form.querySelector('.delivery-note');
+      var noteInput = form.querySelector('.delivery-note');
       if (noteInput) {
-        const failStates = ['failed', 'cancelled', 'cannot_find_customer'];
-        noteInput.placeholder = failStates.includes(deliveryStatus)
+        var failStates = ['failed', 'cancelled', 'cannot_find_customer'];
+        noteInput.placeholder = failStates.indexOf(deliveryStatus) !== -1
           ? 'Reason required for failed or cancelled delivery'
           : deliveryStatus === 'delivered'
             ? 'Optional note for delivered orders'
             : 'Add a delivery note (optional)';
       }
 
-      // Clear any stale messages on status change
-      if (messageEl) msg(messageEl, '', false);
+      msg(messageEl, '', false);
     }
 
-    // Run on page load for each form (in case of pre-selected statuses)
-    document.querySelectorAll('.delivery-form').forEach(form => refreshFormUI(form));
+    document.querySelectorAll('.delivery-form').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+      });
+      refreshFormUI(form);
+    });
 
     /* ── Proof image preview ──────────────────────────── */
 
-    document.querySelectorAll('.delivery-proof-file').forEach(input => {
+    document.querySelectorAll('.delivery-proof-file').forEach(function (input) {
       input.addEventListener('change', function () {
-        const wrap    = this.closest('.proof-row')?.querySelector('.proof-preview-wrap');
-        const preview = this.closest('.proof-row')?.querySelector('.proof-preview');
+        var proofRow = this.closest('.proof-row');
+        var wrap = proofRow ? proofRow.querySelector('.proof-preview-wrap') : null;
+        var preview = proofRow ? proofRow.querySelector('.proof-preview') : null;
         if (!wrap || !preview) return;
 
-        if (this.files && this.files[0]) {
-          const reader = new FileReader();
-          reader.onload = e => {
+        if (this.files && this.files.length && this.files[0]) {
+          var reader = new FileReader();
+          reader.onload = function (e) {
             preview.src = e.target.result;
             wrap.style.display = '';
           };
@@ -401,14 +437,17 @@ include __DIR__ . '/../../includes/header.php';
 
     /* ── API call ─────────────────────────────────────── */
 
-    async function postDeliveryUpdate(orderId, deliveryStatus, orderStatus, note, proofFile = null, removeProof = false) {
+    async function postDeliveryUpdate(orderId, deliveryStatus, orderStatus, note, paymentStatus = '', expectedDeliveryDate = '', proofFile = null, removeProof = false) {
       const formData = new FormData();
       formData.append('order_id', orderId);
-      if (deliveryStatus)       formData.append('delivery_status',    deliveryStatus);
-      if (orderStatus)          formData.append('order_status',        orderStatus);
-      if (note !== '')          formData.append('delivery_note',       note);
-      if (proofFile)            formData.append('delivery_proof',      proofFile);
-      if (removeProof)          formData.append('remove_delivery_proof', '1');
+      if (deliveryStatus)          formData.append('delivery_status',    deliveryStatus);
+      if (orderStatus)             formData.append('order_status',       orderStatus);
+      if (paymentStatus)           formData.append('payment_status',     paymentStatus);
+      if (expectedDeliveryDate)    formData.append('expected_delivery_date', expectedDeliveryDate);
+      if (note !== '')             formData.append('delivery_note',       note);
+      if (proofFile)               formData.append('delivery_proof',      proofFile);
+      if (removeProof)             formData.append('remove_delivery_proof', '1');
+
 
       try {
         const response = await fetch(LOCAL_DELIVERY_ENDPOINT, { method: 'POST', body: formData });
@@ -426,7 +465,17 @@ include __DIR__ . '/../../includes/header.php';
       const form   = button.closest('.delivery-form');
       if (!form) return;
 
-      const { orderId, deliveryStatus, orderStatus, note, proofInput, messageEl, hasProof } = getFields(form);
+      var fields = getFields(form);
+      var orderId = fields.orderId;
+      var deliveryStatus = fields.deliveryStatus;
+      var orderStatus = fields.orderStatus;
+      var paymentStatus = fields.paymentStatus;
+      var expectedDeliveryDate = fields.expectedDeliveryDate;
+      var note = fields.note;
+      var proofInput = fields.proofInput;
+      var hasProof = fields.hasProof;
+      var messageEl = ensureMessageEl(form);
+      // orderStatus is ignored in the rider flow because the backend only supports delivery updates for riders.
 
       // Validation
       if (!deliveryStatus) {
@@ -441,7 +490,7 @@ include __DIR__ . '/../../includes/header.php';
       }
 
       if (deliveryStatus === 'delivered' && !hasProof &&
-          (!proofInput?.files?.length)) {
+          !(proofInput && proofInput.files && proofInput.files.length)) {
         msg(messageEl, '⚠️ Please upload a proof of delivery image.');
         return;
       }
@@ -449,8 +498,8 @@ include __DIR__ . '/../../includes/header.php';
       button.disabled = true;
       msg(messageEl, '⏳ Saving…');
 
-      const proofFile = proofInput?.files?.length ? proofInput.files[0] : null;
-      const result    = await postDeliveryUpdate(orderId, deliveryStatus, orderStatus, note, proofFile);
+      var proofFile = (proofInput && proofInput.files && proofInput.files.length) ? proofInput.files[0] : null;
+      var result = await postDeliveryUpdate(orderId, deliveryStatus, orderStatus, note, paymentStatus, expectedDeliveryDate, proofFile);
 
       if (!result.ok) {
         msg(messageEl, '❌ ' + (result.payload.message || `Save failed (${result.status})`));
@@ -466,23 +515,51 @@ include __DIR__ . '/../../includes/header.php';
       btn.addEventListener('click', handleDeliverySave);
     });
 
+    document.querySelectorAll('.rider-action').forEach(btn => {
+      btn.addEventListener('click', async function () {
+        const orderId = this.dataset.orderId;
+        const nextStatus = this.dataset.nextStatus || '';
+        const form = document.querySelector(`.delivery-form[data-order-id="${orderId}"]`);
+        if (!form || !nextStatus) return;
+
+        const orderStatusEl = form.querySelector('.order-status');
+        if (orderStatusEl) orderStatusEl.value = nextStatus;
+
+        const button = form.querySelector('.delivery-submit');
+        if (button) {
+          const event = new Event('click', { bubbles: true });
+          button.dispatchEvent(event);
+        }
+      });
+    });
+
+    function showProofUploadForOrder(orderId, message) {
+      var form = document.querySelector('.delivery-form[data-order-id="' + orderId + '"]');
+      if (!form) return;
+
+      form.dataset.hasProof = '0';
+      refreshFormUI(form);
+
+      var proofRow = form.querySelector('.proof-row');
+      if (proofRow) {
+        proofRow.style.display = '';
+      }
+
+      var messageEl = form.querySelector('.delivery-message');
+      msg(messageEl, message || 'Choose a proof file, then click Save update.');
+    }
+
     /* ── Replace proof ────────────────────────────────── */
 
     document.querySelectorAll('.proof-replace').forEach(button => {
       button.addEventListener('click', function () {
-        const orderId = this.dataset.orderId;
-        const form    = document.querySelector(`.delivery-form[data-order-id="${orderId}"]`);
-        if (!form) return;
+        showProofUploadForOrder(this.dataset.orderId, 'Choose a new proof file, then click Save update.');
+      });
+    });
 
-        // Treat as "no proof" so the upload row appears
-        form.dataset.hasProof = '0';
-        refreshFormUI(form);
-
-        // Force-show the proof row (even if delivery status isn't "delivered" yet)
-        form.querySelector('.proof-row').style.display = '';
-
-        const messageEl = form.querySelector('.delivery-message');
-        msg(messageEl, 'Choose a new proof file, then click Save update.');
+    document.querySelectorAll('.proof-upload').forEach(button => {
+      button.addEventListener('click', function () {
+        showProofUploadForOrder(this.dataset.orderId, 'Choose a proof file, then click Save update.');
       });
     });
 
@@ -490,15 +567,16 @@ include __DIR__ . '/../../includes/header.php';
 
     document.querySelectorAll('.proof-delete').forEach(button => {
       button.addEventListener('click', async function () {
-        const orderId   = this.dataset.orderId;
-        const messageEl = document.getElementById(`delivery-msg-${orderId}`);
+        var orderId   = this.dataset.orderId;
+        var form = document.querySelector('.delivery-form[data-order-id="' + orderId + '"]');
+        var messageEl = form ? ensureMessageEl(form) : null;
 
         if (!confirm('Delete the uploaded proof photo for this order?')) return;
 
         this.disabled = true;
         if (messageEl) msg(messageEl, '⏳ Deleting proof…');
 
-        const result = await postDeliveryUpdate(orderId, '', '', '', null, true);
+        const result = await postDeliveryUpdate(orderId, '', '', '', '', '', null, true);
 
         if (!result.ok) {
           if (messageEl) msg(messageEl, '❌ ' + (result.payload.message || 'Failed to delete proof.'));
