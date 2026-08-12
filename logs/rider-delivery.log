@@ -30,3 +30,43 @@
 [2026-06-03 17:50:46] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
 [2026-06-03 17:50:46] API_RESPONSE_STATUS_0: 400
 [2026-06-03 17:50:46] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-16 10:25:11] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-16 10:25:11] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-16 10:25:11] API_RESPONSE_STATUS_0: 400
+[2026-06-16 10:25:11] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 17:52:53] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 17:52:53] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 17:52:53] API_RESPONSE_STATUS_0: 400
+[2026-06-26 17:52:53] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 17:55:11] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 17:55:11] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 17:55:11] API_RESPONSE_STATUS_0: 400
+[2026-06-26 17:55:11] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 17:56:46] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 17:56:46] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 17:56:46] API_RESPONSE_STATUS_0: 400
+[2026-06-26 17:56:46] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 18:02:30] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 18:02:30] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 18:02:30] API_RESPONSE_STATUS_0: 400
+[2026-06-26 18:02:30] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 18:05:55] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 18:05:55] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 18:05:55] API_RESPONSE_STATUS_0: 400
+[2026-06-26 18:05:55] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 18:29:45] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 18:29:45] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 18:29:45] API_RESPONSE_STATUS_0: 400
+[2026-06-26 18:29:45] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 18:33:50] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 18:33:50] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 18:33:50] API_RESPONSE_STATUS_0: 400
+[2026-06-26 18:33:50] API_RESPONSE_BODY_0: {"success":false,"message":"Validation failed","errors":[{"field":"delivery_status","message":"Invalid value"},{"field":"delivery_status","message":"Invalid value"}]}
+[2026-06-26 19:28:11] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 19:28:11] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 19:28:13] API_RESPONSE_STATUS_0: 0
+[2026-06-26 19:28:13] API_RESPONSE_BODY_0: []
+[2026-06-26 19:28:18] RIDER_DELIVERY: user=31aba49f-5a93-4de6-8f3e-9bccfea37f4b order_id=0ddfa0dd-19c9-4693-b03e-3ab275519560 endpoint=/orders/0ddfa0dd-19c9-4693-b03e-3ab275519560/delivery
+[2026-06-26 19:28:18] DELIVERY_PAYLOAD: {"remove_delivery_proof":true}
+[2026-06-26 19:28:21] API_RESPONSE_STATUS_0: 0
+[2026-06-26 19:28:21] API_RESPONSE_BODY_0: []

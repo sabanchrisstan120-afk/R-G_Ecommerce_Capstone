@@ -41,7 +41,9 @@ $review_res = api_request(
     '/reviews/product/' . $id
 );
 
-$reviews = $review_res['body']['reviews'] ?? [];
+// Same shape inconsistency as /orders — this endpoint may nest under
+// body.data.reviews instead of body.reviews depending on the route/version.
+$reviews = $review_res['body']['data']['reviews'] ?? $review_res['body']['reviews'] ?? [];
 /* COMPUTE AVERAGE */
 $total_rating = 0;
 
@@ -197,7 +199,7 @@ $review_res = api_request(
     '/reviews/product/' . $id
 );
 
-$reviews = $review_res['body']['reviews'] ?? [];
+$reviews = $review_res['body']['data']['reviews'] ?? $review_res['body']['reviews'] ?? [];
 
 ?>
   <h3 class="section-title">Customer Reviews</h3>
@@ -246,6 +248,7 @@ $reviews = $review_res['body']['reviews'] ?? [];
       </table>
 
       <!-- CTA -->
+      <?php if (!is_admin()): ?>
       <div class="pd-cta">
         <?php if (is_logged_in() && $qty > 0): ?>
           <a href="<?= BASE_URL ?>/pages/checkout.php?product_id=<?= h($product['id']) ?>" class="cta-full">
@@ -259,9 +262,10 @@ $reviews = $review_res['body']['reviews'] ?? [];
           <button class="btn-order btn-full" disabled>Out of Stock</button>
         <?php endif; ?>
       </div>
+      <?php endif; ?>
 
 
-      <?php if (is_logged_in() && $qty > 0): ?>
+      <?php if (is_logged_in() && !is_admin() && $qty > 0): ?>
 
 
 
@@ -288,7 +292,7 @@ $reviews = $review_res['body']['reviews'] ?? [];
 <?php
 $can_review = false;
 
-if (is_logged_in()) {
+if (is_logged_in() && !is_admin()) {
 
     $orders_res = api_request(
         'GET',
@@ -297,7 +301,11 @@ if (is_logged_in()) {
         true
     );
 
-    $orders = $orders_res['body']['data']['orders'] ?? [];
+    // Same API can return orders under body.data.orders OR body.orders
+    // depending on endpoint/version — orders.php already accounts for this.
+    // Missing the fallback here means $orders silently ends up empty and
+    // $can_review never becomes true even for a fully paid/delivered order.
+    $orders = $orders_res['body']['data']['orders'] ?? $orders_res['body']['orders'] ?? [];
 
     foreach ($orders as $o) {
 
